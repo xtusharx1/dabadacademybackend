@@ -59,26 +59,21 @@ router.get('/role/:role_id', async (req, res) => {
 
   try {
     const usersByRole = await User.findAll({
-      where: { role_id }, // Filter users by role_id
-      include: [
-        {
-          model: Role, // Assuming you have a Role model to get role details
-          attributes: ['role_name'] // Replace with the actual fields of your Role model
-        }
-      ]
+      where: { role_id } // Filter users by role_id
     });
 
     if (usersByRole.length === 0) {
       return res.status(404).json({ message: `No users found for role_id ${role_id}` });
     }
 
-    // Return users along with role information
+    // Return users without the role details
     res.status(200).json(usersByRole);
   } catch (error) {
     console.error('Error fetching users by role:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
+
 
 router.get('/roles/count', async (req, res) => {
   try {
