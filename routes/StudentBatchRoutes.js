@@ -20,26 +20,42 @@ router.get('/:batch_id/users', async (req, res) => {
   }
 });
 
-// Controller for adding users to a batch
 router.post('/add', async (req, res) => {
   const { batch_id, user_ids } = req.body;
 
   try {
-    // Map user_ids to bulk insert records
+    // Validate the batch
+    const batch = await Batch.findByPk(batch_id);
+    if (!batch) {
+      return res.status(404).json({ message: 'Batch not found' });
+    }
+
+    // Validate the users
+    const users = await User.findAll({
+      where: {
+        user_id: user_ids,
+      },
+    });
+
+    if (users.length !== user_ids.length) {
+      return res.status(404).json({ message: 'One or more users not found' });
+    }
+
+    // Prepare records for bulk insert
     const records = user_ids.map((user_id) => ({
       user_id,
       batch_id,
     }));
 
-    // Insert records directly
+    // Insert the records into the StudentBatch table
     await StudentBatch.bulkCreate(records);
 
     res.status(200).json({ message: 'Users added to batch successfully' });
   } catch (error) {
+    console.error(error);  // Log the error for debugging
     res.status(500).json({ message: 'Error adding users to batch', error });
   }
 });
-
 // Controller for removing a user from a batch
 router.post('/remove', async (req, res) => {
   const { batch_id, user_ids } = req.body;
