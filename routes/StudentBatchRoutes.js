@@ -26,50 +26,19 @@ router.get('/:batch_id/students', async (req, res) => {
 router.post('/add', async (req, res) => {
   const { batch_id, student_ids } = req.body;
 
-  // Validate input
-  if (!batch_id || !Array.isArray(student_ids) || student_ids.length === 0) {
-    return res.status(400).json({ message: 'Invalid batch_id or student_ids' });
-  }
-
-  const transaction = await sequelize.transaction(); // Start a transaction
-
   try {
-    const batch = await Batch.findByPk(batch_id, { transaction });
-
-    if (!batch) {
-      return res.status(404).json({ message: 'Batch not found' });
-    }
-
-    // Fetch the students based on student_ids
-    const students = await User.findAll({
-      where: {
-        user_id: student_ids,
-      },
-      transaction,
-    });
-
-    if (students.length === 0) {
-      return res.status(404).json({ message: 'No valid students found for the provided IDs' });
-    }
-
-    // Associate the students with the batch
-    await batch.addStudents(students, { transaction });
-
-    await transaction.commit(); // Commit the transaction
-
-    res.status(200).json({
-      message: 'Students added to batch successfully',
+    // Map student_ids to bulk insert records
+    const records = student_ids.map((student_id) => ({
+      student_id,
       batch_id,
-      student_count: students.length,
-      student_ids: students.map(student => student.user_id),
-    });
+    }));
+
+    // Insert records directly
+    await StudentBatch.bulkCreate(records);
+
+    res.status(200).json({ message: 'Students added to batch successfully' });
   } catch (error) {
-    await transaction.rollback(); // Roll back the transaction in case of error
-    console.error('Error adding students to batch:', error);
-    res.status(500).json({
-      message: 'Error adding students to batch',
-      error: error.message || 'Unknown error',
-    });
+    res.status(500).json({ message: 'Error adding students to batch', error });
   }
 });
 
