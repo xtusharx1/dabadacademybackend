@@ -5,20 +5,25 @@ const router = express.Router();
 // Controller for getting all users in a batch
 router.get('/:batch_id/users', async (req, res) => {
   const { batch_id } = req.params;
+  
   try {
-    const batch = await Batch.findByPk(batch_id, {
-      include: User, // Include the associated users
+    // Fetch the student-batch relationship, including only user_id and batch_id
+    const studentsInBatch = await StudentBatch.findAll({
+      where: { batch_id },
+      attributes: ['user_id', 'batch_id']  // Only return user_id and batch_id
     });
 
-    if (!batch) {
-      return res.status(404).json({ message: 'Batch not found' });
+    if (!studentsInBatch || studentsInBatch.length === 0) {
+      return res.status(404).json({ message: 'No users found in this batch' });
     }
 
-    res.status(200).json(batch.Users); // List of users in the batch
+    // Return the list of user_id and batch_id pairs
+    res.status(200).json(studentsInBatch);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching users', error });
   }
 });
+
 
 router.post('/add', async (req, res) => {
   const { batch_id, user_ids } = req.body;
