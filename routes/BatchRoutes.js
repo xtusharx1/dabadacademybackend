@@ -1,16 +1,21 @@
 // routes/batchRoutes.js
-
 const express = require('express');
-const { Batch } = require('../models/batch');
+const { sequelize, DataTypes } = require('../config/db');  // Assuming you have this setup in db.js
+const Batch = require('../models/batch')(sequelize, DataTypes);  // Call the function to get the model
+
 const router = express.Router();
 
 // Controller for getting all batches
 router.get('/', async (req, res) => {
   try {
     const batches = await Batch.findAll();
+    if (!batches.length) {
+      return res.status(404).json({ message: 'No batches found' });
+    }
     res.status(200).json(batches);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching batches', error });
+    console.error(error); // Log error to console for debugging
+    res.status(500).json({ message: 'Error fetching batches', error: error.message });
   }
 });
 
@@ -21,7 +26,8 @@ router.post('/', async (req, res) => {
     const newBatch = await Batch.create({ batch_name });
     res.status(201).json(newBatch);
   } catch (error) {
-    res.status(500).json({ message: 'Error creating batch', error });
+    console.error(error);
+    res.status(500).json({ message: 'Error creating batch', error: error.message });
   }
 });
 
@@ -35,7 +41,8 @@ router.get('/:batch_id', async (req, res) => {
     }
     res.status(200).json(batch);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching batch', error });
+    console.error(error);
+    res.status(500).json({ message: 'Error fetching batch', error: error.message });
   }
 });
 
