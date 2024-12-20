@@ -23,10 +23,10 @@ const OtherChargesRecord = sequelize.define('OtherChargesRecord', {
       model: 'FeeStatus', // Reference the FeeStatus table explicitly
       key: 'id',          // Use the primary key 'id' of FeeStatus
     },
-    // Foreign key will exist but no Sequelize association logic
   },
+}, {
+  tableName: 'OtherChargesRecords',
+  timestamps: false,
 });
-
-// No association is established here
 
 module.exports = OtherChargesRecord;

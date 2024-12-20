@@ -27,9 +27,9 @@ const FeePaymentRecord = sequelize.define('FeePaymentRecord', {
     },
     allowNull: false,
   },
+}, {
+  tableName: 'FeePaymentRecords',
+  timestamps: false,
 });
-
-// FeePaymentRecord belongs to FeeStatus
-FeePaymentRecord.belongsTo(FeeStatus, { foreignKey: 'feeStatusId' });
 
 module.exports = FeePaymentRecord;
