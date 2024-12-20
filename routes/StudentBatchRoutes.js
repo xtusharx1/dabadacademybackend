@@ -1,5 +1,5 @@
 const express = require('express');
-const { User, Batch, StudentBatch } = require('../models'); // Adjusted import
+const { User, Batch, StudentBatch } = require('../models/studentbatch'); // Adjusted import
 const router = express.Router();
 
 // Controller for getting all users in a batch
