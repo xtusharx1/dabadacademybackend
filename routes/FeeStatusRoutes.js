@@ -1,16 +1,12 @@
 const express = require('express');
 const FeeStatus = require('../models/FeeStatus');
-const FeePaymentRecord = require('../models/FeePaymentRecord');
-const OtherChargesRecord = require('../models/OtherChargesRecord');
 
 const router = express.Router();
 
 // Get all fee statuses
 router.get('/', async (req, res) => {
   try {
-    const feeStatuses = await FeeStatus.findAll({
-      include: ['feePayments', 'otherCharges'],
-    });
+    const feeStatuses = await FeeStatus.findAll(); // Remove the 'include' property
     res.json(feeStatuses);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -20,9 +16,7 @@ router.get('/', async (req, res) => {
 // Get a single fee status by ID
 router.get('/:id', async (req, res) => {
   try {
-    const feeStatus = await FeeStatus.findByPk(req.params.id, {
-      include: ['feePayments', 'otherCharges'],
-    });
+    const feeStatus = await FeeStatus.findByPk(req.params.id); // Remove the 'include' property
     if (!feeStatus) return res.status(404).json({ error: 'Fee status not found' });
     res.json(feeStatus);
   } catch (err) {
