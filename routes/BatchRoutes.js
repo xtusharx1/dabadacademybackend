@@ -1,5 +1,7 @@
+// routes/batchRoutes.js
+
 const express = require('express');
-const Batch = require('../models/batch');  // Correct import
+const { Batch } = require('../models/batch');
 const router = express.Router();
 
 // Controller for getting all batches

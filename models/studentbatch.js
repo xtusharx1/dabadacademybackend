@@ -1,9 +1,13 @@
-module.exports = (sequelize, DataTypes) => {
-  const StudentBatch = sequelize.define('StudentBatch', {
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/db'); // Import your sequelize instance
+
+const StudentBatch = sequelize.define(
+  'StudentBatch',
+  {
     user_id: {
       type: DataTypes.INTEGER,
       references: {
-        model: 'Users', // Assuming the Users model is already created
+        model: 'Users', // Name of the Users table
         key: 'user_id',
       },
       allowNull: false,
@@ -11,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
     batch_id: {
       type: DataTypes.INTEGER,
       references: {
-        model: 'Batches', // References the Batches model
+        model: 'Batches', // Name of the Batches table
         key: 'batch_id',
       },
       allowNull: false,
@@ -24,10 +28,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
-  }, {
-    tableName: 'StudentBatches',
-    timestamps: false,
-  });
+  },
+  {
+    tableName: 'StudentBatches', // Ensure this matches the database table name
+    timestamps: false, // Disable automatic timestamps
+  }
+);
 
-  return StudentBatch;
-};
+module.exports = StudentBatch;

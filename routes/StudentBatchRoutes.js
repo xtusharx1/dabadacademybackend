@@ -1,94 +1,126 @@
 const express = require('express');
-const { User, Batch, StudentBatch } = require('../models/studentbatch'); // Adjusted import
+const StudentBatch = require('../models/studentbatch'); // Import the StudentBatch model
 const router = express.Router();
 
-// Controller for getting all users in a batch
-router.get('/:batch_id/users', async (req, res) => {
+// Route: Fetch all students across all batches
+router.get('/students', async (req, res) => {
+  try {
+    const studentsData = await StudentBatch.findAll({
+      attributes: ['user_id', 'batch_id'], // Retrieve only user_id and batch_id
+    });
+
+    if (!studentsData || studentsData.length === 0) {
+      return res.status(404).json({ message: 'No students found' });
+    }
+
+    res.status(200).json(studentsData);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+
+// Route: Fetch all students in a specific batch
+router.get('/students/batch/:batch_id', async (req, res) => {
   const { batch_id } = req.params;
 
   try {
-    // Fetch the student-batch relationship, including only user_id and batch_id
-    const studentsInBatch = await StudentBatch.findAll({
+    const studentsData = await StudentBatch.findAll({
       where: { batch_id },
-      attributes: ['user_id', 'batch_id'], // Only return user_id and batch_id
+      attributes: ['user_id', 'batch_id'],
     });
 
-    if (!studentsInBatch || studentsInBatch.length === 0) {
-      return res.status(404).json({ message: 'No users found in this batch' });
+    if (!studentsData || studentsData.length === 0) {
+      return res.status(404).json({ message: `No students found in batch ${batch_id}` });
     }
 
-    // Return the list of user_id and batch_id pairs
-    res.status(200).json(studentsInBatch);
+    res.status(200).json(studentsData);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching users', error });
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error });
   }
 });
 
-// Controller for adding users to a batch
-router.post('/add', async (req, res) => {
-  const { batch_id, user_ids } = req.body;
+// Route: Add a student to a specific batch
+router.post('/students/batch/:batch_id', async (req, res) => {
+  const { batch_id } = req.params;
+  const { user_id } = req.body;
 
   try {
-    // Validate the batch
-    const batch = await Batch.findByPk(batch_id);
-    if (!batch) {
-      return res.status(404).json({ message: 'Batch not found' });
+    if (!user_id) {
+      return res.status(400).json({ message: 'User ID is required' });
     }
 
-    // Validate the users
-    const users = await User.findAll({
-      where: {
-        user_id: user_ids,
-      },
-    });
-
-    if (users.length !== user_ids.length) {
-      return res.status(404).json({ message: 'One or more users not found' });
-    }
-
-    // Prepare records for bulk insert
-    const records = user_ids.map((user_id) => ({
+    const newStudent = await StudentBatch.create({
       user_id,
       batch_id,
-    }));
+    });
 
-    // Insert the records into the StudentBatch table
-    await StudentBatch.bulkCreate(records);
-
-    res.status(200).json({ message: 'Users added to batch successfully' });
+    res.status(201).json({ message: 'Student added successfully', student: newStudent });
   } catch (error) {
-    console.error(error);  // Log the error for debugging
-    res.status(500).json({ message: 'Error adding users to batch', error });
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error });
   }
 });
 
-// Controller for removing a user from a batch
-router.post('/remove', async (req, res) => {
-  const { batch_id, user_ids } = req.body;
+// Route: Get the count of all batches
+router.get('/batches/count', async (req, res) => {
+  try {
+    const batchesData = await StudentBatch.findAll({
+      attributes: ['batch_id'],
+      group: ['batch_id'], // Group by batch_id to get unique batch IDs
+    });
+
+    const batchCount = batchesData.length;
+
+    res.status(200).json({ batchCount, batches: batchesData });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+
+// Route: Get the count of students in a specific batch
+router.get('/batches/:batch_id/count', async (req, res) => {
+  const { batch_id } = req.params;
 
   try {
-    // Validate the batch
-    const batch = await Batch.findByPk(batch_id);
-    if (!batch) {
-      return res.status(404).json({ message: 'Batch not found' });
+    const studentCount = await StudentBatch.count({
+      where: { batch_id },
+    });
+
+    res.status(200).json({ batch_id, studentCount });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+
+// Route: Remove a student from a specific batch
+router.delete('/students/batch/', async (req, res) => {
+  const { batch_id } = req.params;
+  const { user_id } = req.body;
+
+  try {
+    if (!user_id) {
+      return res.status(400).json({ message: 'User ID is required' });
     }
 
-    // Check if the users exist in the StudentBatch table and remove them
     const deletedCount = await StudentBatch.destroy({
       where: {
+        user_id,
         batch_id,
-        user_id: user_ids,
       },
     });
 
     if (deletedCount === 0) {
-      return res.status(404).json({ message: 'No users found to remove from this batch' });
+      return res.status(404).json({ message: `No record found for user ${user_id} in batch ${batch_id}` });
     }
 
-    res.status(200).json({ message: 'Users removed from batch successfully' });
+    res.status(200).json({ message: 'Student removed successfully' });
   } catch (error) {
-    console.error(error);  // Log the error for debugging
-    res.status(500).json({ message: 'Error removing users from batch', error });
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error });
   }
 });
 
