@@ -2,10 +2,9 @@ const express = require('express');
 const Batch = require('../models/batch'); // Ensure correct import
 const router = express.Router();
 
-// Controller for getting all batches
 router.get('/', async (req, res) => {
   try {
-    const batches = await Batch.findAll(); // Ensure Batch is properly imported
+    const batches = await Batch.findAll(); 
     res.status(200).json(batches);
   } catch (error) {
     console.error('Error fetching batches:', error);
@@ -13,7 +12,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Controller for creating a new batch
 router.post('/', async (req, res) => {
   try {
     const { batch_name } = req.body;
@@ -25,7 +23,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Controller for getting a specific batch
 router.get('/:batch_id', async (req, res) => {
   const { batch_id } = req.params;
   try {
