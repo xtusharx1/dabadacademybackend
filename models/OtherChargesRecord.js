@@ -1,7 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-// FeeStatus model import can be kept if needed for the schema reference
-const FeeStatus = require('./FeeStatus'); 
+const FeeStatus = require('./FeeStatus'); // Import FeeStatus model
 
 const OtherChargesRecord = sequelize.define('OtherChargesRecord', {
   title: {
@@ -16,17 +15,17 @@ const OtherChargesRecord = sequelize.define('OtherChargesRecord', {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  feeStatusId: { 
+  feeStatusId: {
     type: DataTypes.INTEGER,
-    allowNull: false,
     references: {
-      model: 'FeeStatus', // Reference the FeeStatus table explicitly
-      key: 'id',          // Use the primary key 'id' of FeeStatus
+      model: FeeStatus,
+      key: 'id',
     },
+    allowNull: false,
   },
 }, {
   tableName: 'OtherChargesRecords',
-  timestamps: false,
+  timestamps: true,  // This will automatically add 'createdAt' and 'updatedAt' fields
 });
 
 module.exports = OtherChargesRecord;
