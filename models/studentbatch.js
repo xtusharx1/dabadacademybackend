@@ -11,6 +11,7 @@ const StudentBatch = sequelize.define(
         key: 'user_id',
       },
       allowNull: false,
+      primaryKey: true, // Set as part of the composite primary key
     },
     batch_id: {
       type: DataTypes.INTEGER,
@@ -19,6 +20,7 @@ const StudentBatch = sequelize.define(
         key: 'batch_id',
       },
       allowNull: false,
+      primaryKey: true, // Set as part of the composite primary key
     },
     created_at: {
       type: DataTypes.DATE,
