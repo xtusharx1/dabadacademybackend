@@ -49,6 +49,53 @@ try {
 }
 
 });
+// Route to get user details by user_id
+router.get('/user/:user_id', async (req, res) => {
+  const { user_id } = req.params;
+
+  if (!user_id) {
+    return res.status(400).json({ message: 'Please provide a user_id' });
+  }
+
+  try {
+    // Fetch the user by user_id
+    const user = await User.findOne({
+      where: { user_id },
+    });
+
+    // If user is not found
+    if (!user) {
+      return res.status(404).json({ message: `User with id ${user_id} not found` });
+    }
+
+    // Return user details
+    res.status(200).json({
+      user: {
+        id: user.user_id,
+        name: user.name,
+        email: user.email,
+        role_id: user.role_id,
+        date_of_admission: user.date_of_admission,
+        present_class: user.present_class,
+        date_of_birth: user.date_of_birth,
+        total_course_fees: user.total_course_fees,
+        father_name: user.father_name,
+        mother_name: user.mother_name,
+        full_address: user.full_address,
+        child_aadhar_number: user.child_aadhar_number,
+        mother_aadhar_number: user.mother_aadhar_number,
+        father_aadhar_number: user.father_aadhar_number,
+        permanent_education_number: user.permanent_education_number,
+        student_registration_number: user.student_registration_number,
+        previous_school_info: user.previous_school_info,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching user by ID:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // Route to get users by role_id, including role details
 router.get('/role/:role_id', async (req, res) => {
   const { role_id } = req.params;
