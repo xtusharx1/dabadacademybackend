@@ -31,21 +31,12 @@ router.get('/test/:test_id', async (req, res) => {
         // Fetch student test records based on test_id
         const records = await StudentTestRecords.findAll({
             where: { test_id: test_id },
-            include: {
-                model: User,  // Assuming you have a 'User' model for student details
-                attributes: ['user_id', 'name'] // Include student details like user_id and name
-            }
+            attributes: ['record_id', 'test_id', 'user_id', 'marks_obtained'] // Fetch only required fields
         });
 
         if (records.length > 0) {
-            // Send the records along with the associated student details
-            res.json(records.map(record => ({
-                record_id: record.record_id,
-                test_id: record.test_id,
-                user_id: record.user_id,
-                marks_obtained: record.marks_obtained,
-                student_name: record.User.name // Assuming 'User' model has a 'name' attribute
-            })));
+            // Send the records with only the required attributes
+            res.json(records);
         } else {
             res.status(404).json({ message: 'No records found for this test.' });
         }
@@ -53,6 +44,7 @@ router.get('/test/:test_id', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
 
 // Edit a student test record
 router.put('/:record_id', async (req, res) => {
