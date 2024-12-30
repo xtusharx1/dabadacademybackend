@@ -23,26 +23,31 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Get student test records by batch_id
-router.get('/batch/:batch_id', async (req, res) => {
+// Get student test records by test_id
+router.get('/test/:test_id', async (req, res) => {
     try {
-        const { batch_id } = req.params;
+        const { test_id } = req.params;
         
-        // Assuming the user_id or test_id is linked with batch_id in your model
+        // Fetch student test records based on test_id
         const records = await StudentTestRecords.findAll({
+            where: { test_id: test_id },
             include: {
-                model: User,  // Assuming you have a 'User' model or similar for student details
-                where: {
-                    batch_id: batch_id
-                },
-                attributes: ['user_id', 'name', 'batch_id'] // Example attributes to include
+                model: User,  // Assuming you have a 'User' model for student details
+                attributes: ['user_id', 'name'] // Include student details like user_id and name
             }
         });
 
         if (records.length > 0) {
-            res.json(records);
+            // Send the records along with the associated student details
+            res.json(records.map(record => ({
+                record_id: record.record_id,
+                test_id: record.test_id,
+                user_id: record.user_id,
+                marks_obtained: record.marks_obtained,
+                student_name: record.User.name // Assuming 'User' model has a 'name' attribute
+            })));
         } else {
-            res.status(404).json({ message: 'No records found for this batch.' });
+            res.status(404).json({ message: 'No records found for this test.' });
         }
     } catch (error) {
         res.status(500).json({ error: error.message });
