@@ -5,50 +5,63 @@ const sequelize = require('../config/db'); // Import sequelize
 
 const router = express.Router();
 
+// Route to register a new user
 router.post('/register', async (req, res) => {
-  const { name, email, password, role_id, date_of_admission, present_class, date_of_birth, total_course_fees, father_name, mother_name, full_address, child_aadhar_number, mother_aadhar_number, father_aadhar_number, permanent_education_number, student_registration_number, previous_school_info } = req.body;
+  const { 
+    name, email, password, role_id, date_of_admission, 
+    present_class, date_of_birth, total_course_fees, father_name, 
+    mother_name, full_address, child_aadhar_number, mother_aadhar_number, 
+    father_aadhar_number, permanent_education_number, student_registration_number, 
+    previous_school_info 
+  } = req.body;
 
-if (!name || !email || !password || !role_id) {
-  return res.status(400).json({ message: 'Please provide name, email, password, and role_id' });
-}
+  if (!name || !email || !password || !role_id) {
+    return res.status(400).json({ message: 'Please provide name, email, password, and role_id' });
+  }
 
-const userExists = await User.findOne({ where: { email } });
-if (userExists) {
-  return res.status(400).json({ message: 'User already exists' });
-}
+  try {
+    // Check if the user already exists
+    const userExists = await User.findOne({ where: { email } });
+    if (userExists) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
 
-// Hash the password
-const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-const newUser = {
-  name,
-  email,
-  password_hash: hashedPassword, // Ensure the field matches the model name
-  role_id,
-  date_of_admission,
-  present_class,
-  date_of_birth,
-  total_course_fees,
-  father_name,
-  mother_name,
-  full_address,
-  child_aadhar_number,
-  mother_aadhar_number,
-  father_aadhar_number,
-  permanent_education_number,
-  student_registration_number,
-  previous_school_info,
-};
+    const newUser = {
+      name,
+      email,
+      password_hash: hashedPassword,
+      role_id,
+      date_of_admission,
+      present_class,
+      date_of_birth,
+      total_course_fees,
+      father_name,
+      mother_name,
+      full_address,
+      child_aadhar_number,
+      mother_aadhar_number,
+      father_aadhar_number,
+      permanent_education_number,
+      student_registration_number,
+      previous_school_info,
+    };
 
-try {
-  const createdUser = await User.create(newUser);
-  res.status(201).json({ message: 'User registered successfully', user: { id: createdUser.user_id, name: createdUser.name, email: createdUser.email } });
-} catch (error) {
-  console.error(error);
-  res.status(500).json({ message: 'Internal server error' });
-}
+    // Create a new user
+    const createdUser = await User.create(newUser);
 
+    res.status(201).json({
+      message: 'User registered successfully',
+      user: { id: createdUser.user_id, name: createdUser.name, email: createdUser.email },
+    });
+  } catch (error) {
+    console.error('Error during user registration:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
 });
+
 // Route to get user details by user_id
 router.get('/user/:user_id', async (req, res) => {
   const { user_id } = req.params;
@@ -58,45 +71,23 @@ router.get('/user/:user_id', async (req, res) => {
   }
 
   try {
-    // Fetch the user by user_id
+    // Fetch the user by user_id (batch info is no longer included)
     const user = await User.findOne({
       where: { user_id },
     });
 
-    // If user is not found
     if (!user) {
       return res.status(404).json({ message: `User with id ${user_id} not found` });
     }
 
-    // Return user details
-    res.status(200).json({
-      user: {
-        id: user.user_id,
-        name: user.name,
-        email: user.email,
-        role_id: user.role_id,
-        date_of_admission: user.date_of_admission,
-        present_class: user.present_class,
-        date_of_birth: user.date_of_birth,
-        total_course_fees: user.total_course_fees,
-        father_name: user.father_name,
-        mother_name: user.mother_name,
-        full_address: user.full_address,
-        child_aadhar_number: user.child_aadhar_number,
-        mother_aadhar_number: user.mother_aadhar_number,
-        father_aadhar_number: user.father_aadhar_number,
-        permanent_education_number: user.permanent_education_number,
-        student_registration_number: user.student_registration_number,
-        previous_school_info: user.previous_school_info,
-      },
-    });
+    res.status(200).json({ user });
   } catch (error) {
     console.error('Error fetching user by ID:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
-// Route to get users by role_id, including role details
+// Route to get users by role_id
 router.get('/role/:role_id', async (req, res) => {
   const { role_id } = req.params;
 
@@ -106,14 +97,13 @@ router.get('/role/:role_id', async (req, res) => {
 
   try {
     const usersByRole = await User.findAll({
-      where: { role_id } // Filter users by role_id
+      where: { role_id },
     });
 
     if (usersByRole.length === 0) {
       return res.status(404).json({ message: `No users found for role_id ${role_id}` });
     }
 
-    // Return users without the role details
     res.status(200).json(usersByRole);
   } catch (error) {
     console.error('Error fetching users by role:', error);
@@ -121,28 +111,24 @@ router.get('/role/:role_id', async (req, res) => {
   }
 });
 
-
+// Route to get user counts by role_id
 router.get('/roles/count', async (req, res) => {
   try {
-    // First, get the count of users per role
     const roleCounts = await User.findAll({
       attributes: [
         'role_id',
         [sequelize.fn('COUNT', sequelize.col('role_id')), 'count'],
       ],
-      group: ['role_id'], // Group by role_id
+      group: ['role_id'],
     });
 
-    // Second, get the total count of users
     const totalUsers = await User.count();
 
-    // Map the roleCounts to return the role_id and user count
     const result = roleCounts.map(role => ({
       role_id: role.role_id,
       count: role.dataValues.count,
     }));
 
-    // Add the total user count to the response
     result.push({ total_users: totalUsers });
 
     res.status(200).json(result);
@@ -152,9 +138,7 @@ router.get('/roles/count', async (req, res) => {
   }
 });
 
-
-
-
+// Route to log in
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -177,19 +161,19 @@ router.post('/login', async (req, res) => {
       message: 'Login successful',
       user: { id: user.user_id, name: user.name, email: user.email },
     });
-  } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
-
+// Fetch all users
 router.get('/', async (req, res) => {
   try {
     const users = await User.findAll();
     res.status(200).json(users);
   } catch (error) {
-    console.error(error);
+    console.error('Error fetching users:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

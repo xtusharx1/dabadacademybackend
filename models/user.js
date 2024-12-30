@@ -96,10 +96,6 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: true,
   },
-  course_id: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-  },
   gender: {
     type: DataTypes.STRING,
     allowNull: true,
@@ -108,16 +104,7 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: true,
   },
-  batch_id: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    references: {
-      model: 'Batches', // Reference to the Batches table
-      key: 'batch_id', // Ensure this matches the primary key in the Batches table
-    },
-    onDelete: 'SET NULL', // Set batch_id to NULL if the batch is deleted
-    onUpdate: 'CASCADE', // Update batch_id in Users if it changes in Batches
-  },
+  
 }, {
   tableName: 'Users',
   timestamps: false,
