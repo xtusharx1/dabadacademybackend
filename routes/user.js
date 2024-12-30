@@ -1,9 +1,11 @@
 const express = require('express');
-const bcrypt = require('bcrypt');
-const { User } = require('../models'); // Assuming User model is in models directory
+const bcrypt = require('bcryptjs');
+const User = require('../models/user'); // Import the User model
+const sequelize = require('../config/db'); // Import sequelize
+
 const router = express.Router();
 
-/** Register a New User */
+// Route to register a new user
 router.post('/register', async (req, res) => {
   const { 
     name, email, password, role_id, phone_number, date_of_admission, 
@@ -18,11 +20,13 @@ router.post('/register', async (req, res) => {
   }
 
   try {
+    // Check if the user already exists
     const userExists = await User.findOne({ where: { email } });
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    // Check if the phone number already exists
     if (phone_number) {
       const phoneExists = await User.findOne({ where: { phone_number } });
       if (phoneExists) {
@@ -30,6 +34,7 @@ router.post('/register', async (req, res) => {
       }
     }
 
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = {
@@ -53,6 +58,7 @@ router.post('/register', async (req, res) => {
       previous_school_info,
     };
 
+    // Create a new user
     const createdUser = await User.create(newUser);
 
     res.status(201).json({
@@ -65,7 +71,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-/** Get User Details by user_id */
+// Route to get user details by user_id
 router.get('/user/:user_id', async (req, res) => {
   const { user_id } = req.params;
 
@@ -74,6 +80,7 @@ router.get('/user/:user_id', async (req, res) => {
   }
 
   try {
+    // Fetch the user by user_id
     const user = await User.findOne({
       where: { user_id },
     });
@@ -82,14 +89,14 @@ router.get('/user/:user_id', async (req, res) => {
       return res.status(404).json({ message: `User with id ${user_id} not found` });
     }
 
-    res.status(200).json({ user });
+    res.status(200).json({ user: { id: user.user_id, name: user.name, email: user.email, phone_number: user.phone_number } });
   } catch (error) {
     console.error('Error fetching user by ID:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
-/** Get Users by role_id */
+// Route to get users by role_id
 router.get('/role/:role_id', async (req, res) => {
   const { role_id } = req.params;
 
@@ -114,20 +121,34 @@ router.get('/role/:role_id', async (req, res) => {
   }
 });
 
-/** Fetch All Users */
-router.get('/', async (req, res) => {
+// Route to get user counts by role_id
+router.get('/roles/count', async (req, res) => {
   try {
-    const users = await User.findAll({
-      attributes: ['user_id', 'name', 'email', 'phone_number'], // Include phone_number
+    const roleCounts = await User.findAll({
+      attributes: [
+        'role_id',
+        [sequelize.fn('COUNT', sequelize.col('role_id')), 'count'],
+      ],
+      group: ['role_id'],
     });
-    res.status(200).json(users);
+
+    const totalUsers = await User.count();
+
+    const result = roleCounts.map(role => ({
+      role_id: role.role_id,
+      count: role.dataValues.count,
+    }));
+
+    result.push({ total_users: totalUsers });
+
+    res.status(200).json(result);
   } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error fetching role counts:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
-/** Login */
+// Route to log in
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -153,6 +174,19 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Fetch all users
+router.get('/', async (req, res) => {
+  try {
+    const users = await User.findAll({
+      attributes: ['user_id', 'name', 'email', 'phone_number'], // Include phone_number
+    });
+    res.status(200).json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
