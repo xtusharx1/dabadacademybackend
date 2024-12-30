@@ -1,52 +1,54 @@
 const express = require('express');
-const FeePaymentRecord = require('../models/FeePaymentRecord');
-
 const router = express.Router();
+const FeePaymentRecord = require('../models/FeePaymentRecord');
+const FeeStatus = require('../models/FeeStatus');
 
-// Get all fee payment records for a specific fee status
-router.get('/status/:feeStatusId', async (req, res) => {
-  try {
-    const records = await FeePaymentRecord.findAll({ where: { feeStatusId: req.params.feeStatusId } });
-    res.json(records);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// Add a payment record
+router.post('/add-payment', async (req, res) => {
+    try {
+        const { title, date, amount, feeStatusId } = req.body;
+
+        // Create a new payment record
+        const newPayment = await FeePaymentRecord.create({ title, date, amount, feeStatusId });
+
+        // Update FeeStatus: Add payment to feesSubmitted and recalculate remainingFees
+        const feeStatus = await FeeStatus.findByPk(feeStatusId);
+
+        if (!feeStatus) {
+            return res.status(404).json({ error: 'FeeStatus not found' });
+        }
+
+        const updatedFeesSubmitted = parseFloat(feeStatus.feesSubmitted) + parseFloat(amount);
+        const updatedRemainingFees = parseFloat(feeStatus.totalFees) - updatedFeesSubmitted;
+
+        await feeStatus.update({
+            feesSubmitted: updatedFeesSubmitted.toFixed(2),
+            remainingFees: updatedRemainingFees.toFixed(2),
+        });
+
+        res.status(201).json({ message: 'Payment added successfully', newPayment, feeStatus });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
-// Create a new fee payment record for a specific fee status
-router.post('/status/:feeStatusId', async (req, res) => {
-  try {
-    const feePaymentRecord = await FeePaymentRecord.create({
-      ...req.body,
-      feeStatusId: req.params.feeStatusId,
-    });
-    res.status(201).json(feePaymentRecord);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// Fetch all payment records for a student
+router.get('/payments/:feeStatusId', async (req, res) => {
+    try {
+        const { feeStatusId } = req.params;
 
-// Update a fee payment record
-router.put('/:id', async (req, res) => {
-  try {
-    const [updated] = await FeePaymentRecord.update(req.body, { where: { id: req.params.id } });
-    if (!updated) return res.status(404).json({ error: 'Record not found' });
-    const updatedRecord = await FeePaymentRecord.findByPk(req.params.id);
-    res.json(updatedRecord);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+        const payments = await FeePaymentRecord.findAll({
+            where: { feeStatusId },
+        });
 
-// Delete a fee payment record
-router.delete('/:id', async (req, res) => {
-  try {
-    const deleted = await FeePaymentRecord.destroy({ where: { id: req.params.id } });
-    if (!deleted) return res.status(404).json({ error: 'Record not found' });
-    res.status(204).json();
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+        if (!payments.length) {
+            return res.status(404).json({ error: 'No payment records found' });
+        }
+
+        res.status(200).json(payments);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 module.exports = router;
