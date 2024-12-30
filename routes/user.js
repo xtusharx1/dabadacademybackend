@@ -115,7 +115,7 @@ router.get('/role/:role_id', async (req, res) => {
   try {
     const usersByRole = await User.findAll({
       where: { role_id },
-      attributes: ['user_id', 'name', 'email', 'phone_number', 'status'], // Include status
+      attributes: ['user_id', 'name', 'email', 'phone_number', 'status', 'created_at'], // Include created_at
     });
 
     if (usersByRole.length === 0) {
@@ -128,6 +128,7 @@ router.get('/role/:role_id', async (req, res) => {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
+
 
 // Get user counts by role_id and status
 router.get('/roles/count', async (req, res) => {
