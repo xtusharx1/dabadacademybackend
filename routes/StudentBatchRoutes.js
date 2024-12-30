@@ -41,38 +41,23 @@ router.get('/students/batch/:batch_id', async (req, res) => {
   }
 });
 
-// Route: Add a student to a specific batch (no batch_id in URL)
+// Route: Add a student to a specific batch (simple version)
 router.post('/students/batch', async (req, res) => {
   const { batch_id, user_id } = req.body;
 
-  // Validate batch_id and user_id
-  if (!batch_id || isNaN(batch_id)) {
-    return res.status(400).json({ message: 'Invalid batch ID' });
-  }
-
-  if (!user_id || isNaN(user_id)) {
-    return res.status(400).json({ message: 'User ID is required and should be a number' });
+  if (!batch_id || !user_id) {
+    return res.status(400).json({ message: 'Batch ID and User ID are required' });
   }
 
   try {
-    // Ensure the batch exists before adding the student
-    const batchExists = await Batch.findOne({ where: { batch_id } });
-    if (!batchExists) {
-      return res.status(404).json({ message: `Batch with ID ${batch_id} not found` });
-    }
-
-    // Create a new student in the batch
-    const newStudent = await StudentBatch.create({
-      user_id,
-      batch_id,
-    });
-
+    const newStudent = await StudentBatch.create({ user_id, batch_id });
     res.status(201).json({ message: 'Student added successfully', student: newStudent });
   } catch (error) {
     console.error('Error adding student to batch:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
+
 
 // Route: Get the count of all batches
 router.get('/batches/count', async (req, res) => {
