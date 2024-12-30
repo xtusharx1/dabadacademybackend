@@ -19,13 +19,17 @@ const FeePaymentRecord = sequelize.define('FeePaymentRecord', {
     type: DataTypes.BOOLEAN,
     defaultValue: true,
   },
-  feeStatusId: { // Foreign key to FeeStatus
+  feeStatusId: {
     type: DataTypes.INTEGER,
     references: {
-      model: FeeStatus, // Reference the FeeStatus model
-      key: 'id', // Primary key in FeeStatus
+      model: FeeStatus,
+      key: 'id',
     },
     allowNull: false,
+  },
+  comments: {
+    type: DataTypes.STRING,
+    allowNull: true,
   },
 }, {
   tableName: 'FeePaymentRecords',
