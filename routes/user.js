@@ -80,33 +80,49 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Get user details by user_id
 router.get('/user/:user_id', async (req, res) => {
   const { user_id } = req.params;
 
   try {
     const user = await User.findOne({
       where: { user_id },
+      attributes: [
+        'user_id',
+        'name',
+        'email',
+        'password',
+        'role_id',
+        'phone_number',
+        'date_of_admission',
+        'present_class',
+        'date_of_birth',
+        'total_course_fees',
+        'father_name',
+        'mother_name',
+        'full_address',
+        'child_aadhar_number',
+        'mother_aadhar_number',
+        'father_aadhar_number',
+        'permanent_education_number',
+        'student_registration_number',
+        'previous_school_info',
+        'gender',
+        'state',
+        'status',
+      ],
     });
 
     if (!user) {
       return res.status(404).json({ message: `User with id ${user_id} not found` });
     }
 
-    res.status(200).json({
-      user: {
-        id: user.user_id,
-        name: user.name,
-        email: user.email,
-        phone_number: user.phone_number,
-        status: user.status, // Include status in the response
-      },
-    });
+    res.status(200).json({ user });
   } catch (error) {
     console.error('Error fetching user:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
+
 
 // Get users by role_id
 router.get('/role/:role_id', async (req, res) => {
