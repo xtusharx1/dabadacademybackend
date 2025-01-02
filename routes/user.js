@@ -90,7 +90,6 @@ router.get('/user/:user_id', async (req, res) => {
         'user_id',
         'name',
         'email',
-        'password',
         'role_id',
         'phone_number',
         'date_of_admission',
