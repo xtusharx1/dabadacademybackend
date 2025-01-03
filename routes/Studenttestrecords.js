@@ -71,5 +71,26 @@ router.put('/:record_id', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+// Get student test records by user_id
+router.get('/user/:user_id', async (req, res) => {
+    try {
+        const { user_id } = req.params;
+
+        // Fetch student test records based on user_id
+        const records = await StudentTestRecords.findAll({
+            where: { user_id: user_id },
+            attributes: ['record_id', 'test_id', 'user_id', 'marks_obtained'] // Fetch only required fields
+        });
+
+        if (records.length > 0) {
+            // Send the records with only the required attributes
+            res.json(records);
+        } else {
+            res.status(404).json({ message: 'No records found for this user.' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 module.exports = router;
