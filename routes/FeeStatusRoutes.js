@@ -1,6 +1,7 @@
 const express = require('express');
 const FeeStatus = require('../models/FeeStatus');
 
+const { Op, Sequelize } = require('sequelize');
 const router = express.Router();
 
 // Get all fee statuses
@@ -12,7 +13,65 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+router.get('/summary', async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
 
+    // Total number of students
+    const totalStudents = await FeeStatus.count();
+
+    // Total due fees (sum of remaining fees)
+    const totalDueFee = await FeeStatus.findOne({
+      attributes: [
+        [Sequelize.literal('SUM(CAST("remainingFees" AS NUMERIC))'), 'totalDueFee'],
+      ],
+    });
+
+    // Total fees due today
+    const totalDueToday = await FeeStatus.findOne({
+      attributes: [
+        [Sequelize.literal('SUM(CAST("remainingFees" AS NUMERIC))'), 'totalDueToday'],
+      ],
+      where: {
+        nextDueDate: today,
+      },
+    });
+
+    res.json({
+      totalStudents,
+      totalDueFee: totalDueFee?.dataValues?.totalDueFee || 0,
+      totalDueToday: totalDueToday?.dataValues?.totalDueToday || 0,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+router.get('/upcoming-dues', async (req, res) => {
+  try {
+    // Fetch all students with their upcoming fee dues
+    const upcomingDues = await FeeStatus.findAll({
+      attributes: [
+        'id',
+        'admissionDate',
+        'totalFees',
+        'feesSubmitted',
+        'remainingFees',
+        'nextDueDate',
+        'user_id',
+      ],
+      where: {
+        nextDueDate: {
+          [Sequelize.Op.gt]: new Date(), // Fetch records where the nextDueDate is greater than today
+        },
+      },
+      order: [['nextDueDate', 'ASC']], // Sort by the closest due date
+    });
+
+    res.json(upcomingDues);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 // Get a single fee status by ID
 router.get('/:id', async (req, res) => {
   try {

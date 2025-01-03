@@ -5,14 +5,13 @@ const sequelize = require('../config/db');
 
 const router = express.Router();
 
-// Register a new user
 router.post('/register', async (req, res) => {
   const {
     name, email, password, role_id, phone_number, date_of_admission,
     present_class, date_of_birth, total_course_fees, father_name,
     mother_name, full_address, child_aadhar_number, mother_aadhar_number,
     father_aadhar_number, permanent_education_number, student_registration_number,
-    previous_school_info, gender, state, status = 'active' // default to 'active'
+    previous_school_info, gender, state, status = 'active'
   } = req.body;
 
   if (!name || !email || !password || !role_id) {
@@ -20,13 +19,10 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    // Check if the user already exists
     const userExists = await User.findOne({ where: { email } });
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
     }
-
-    // Check if phone number already exists
     if (phone_number) {
       const phoneExists = await User.findOne({ where: { phone_number } });
       if (phoneExists) {
