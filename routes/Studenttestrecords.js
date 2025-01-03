@@ -92,5 +92,30 @@ router.get('/user/:user_id', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+// Get statistics for a specific test_id
+router.get('/statistics/:test_id', async (req, res) => {
+    try {
+        const { test_id } = req.params;
+
+        // Fetch aggregated statistics for the specified test_id
+        const statistics = await StudentTestRecords.findOne({
+            attributes: [
+                'test_id',
+                [sequelize.fn('MAX', sequelize.col('marks_obtained')), 'highest_marks'],
+                [sequelize.fn('MIN', sequelize.col('marks_obtained')), 'lowest_marks'],
+                [sequelize.fn('AVG', sequelize.col('marks_obtained')), 'average_marks'],
+            ],
+            where: { test_id: test_id },
+        });
+
+        if (statistics) {
+            res.json(statistics);
+        } else {
+            res.status(404).json({ message: `No records found for test ID ${test_id}.` });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 module.exports = router;
