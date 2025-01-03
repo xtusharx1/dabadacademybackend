@@ -21,9 +21,9 @@ const StudentTestRecords = sequelize.define('StudentTestRecords', {
     },
 }, {
     tableName: 'StudentTestRecords',
-    timestamps: true, // Enables created_at and updated_at columns
-    createdAt: 'created_at', // Optional: Custom name for the createdAt column
-    updatedAt: 'updated_at', // Optional: Custom name for the updatedAt column
+    timestamps: true, // Automatically handles created_at and updated_at columns
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
 });
 
 module.exports = StudentTestRecords;
