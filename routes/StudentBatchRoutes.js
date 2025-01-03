@@ -117,5 +117,29 @@ router.delete('/students/batch', async (req, res) => {
     res.status(500).json({ message: 'Server error', error });
   }
 });
+// Route: Search for a student by user_id
+router.get('/students/search/:user_id', async (req, res) => {
+  const { user_id } = req.params;
+
+  if (!user_id || isNaN(user_id)) {
+    return res.status(400).json({ message: 'Valid User ID is required' });
+  }
+
+  try {
+    const studentData = await StudentBatch.findAll({
+      where: { user_id },
+      attributes: ['user_id', 'batch_id'],
+    });
+
+    if (!studentData.length) {
+      return res.status(404).json({ message: `No student found with User ID ${user_id}` });
+    }
+
+    res.status(200).json(studentData);
+  } catch (error) {
+    console.error('Error searching student by user ID:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
 
 module.exports = router;
