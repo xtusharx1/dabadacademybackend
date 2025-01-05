@@ -11,7 +11,17 @@ router.get('/', async (req, res) => {
     res.status(500).json({ message: 'Error fetching batches', error });
   }
 });
+router.get('/count', async (req, res) => {
+  try {
+    // Use Sequelize's count() method to count the batches
+    const batchCount = await Batch.count();
 
+    res.status(200).json({ batch_count: batchCount });
+  } catch (error) {
+    console.error('Error fetching batch count:', error);
+    res.status(500).json({ message: 'Error fetching batch count', error });
+  }
+});
 router.post('/', async (req, res) => {
   try {
     const { batch_name } = req.body;
