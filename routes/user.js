@@ -75,6 +75,78 @@ router.post('/register', async (req, res) => {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
+// Update user by user_id
+router.put('/user/:user_id', async (req, res) => {
+  const { user_id } = req.params;
+  const {
+    name,
+    email,
+    role_id,
+    phone_number,
+    date_of_admission,
+    present_class,
+    date_of_birth,
+    total_course_fees,
+    father_name,
+    mother_name,
+    full_address,
+    child_aadhar_number,
+    mother_aadhar_number,
+    father_aadhar_number,
+    permanent_education_number,
+    student_registration_number,
+    previous_school_info,
+    gender,
+    state,
+    status,
+  } = req.body;
+
+  try {
+    const user = await User.findOne({ where: { user_id } });
+
+    if (!user) {
+      return res.status(404).json({ message: `User with id ${user_id} not found` });
+    }
+
+    // Update user fields
+    const updatedUser = await user.update({
+      name,
+      email,
+      role_id,
+      phone_number,
+      date_of_admission,
+      present_class,
+      date_of_birth,
+      total_course_fees,
+      father_name,
+      mother_name,
+      full_address,
+      child_aadhar_number,
+      mother_aadhar_number,
+      father_aadhar_number,
+      permanent_education_number,
+      student_registration_number,
+      previous_school_info,
+      gender,
+      state,
+      status,
+    });
+
+    res.status(200).json({
+      message: 'User updated successfully',
+      user: {
+        id: updatedUser.user_id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone_number: updatedUser.phone_number,
+        status: updatedUser.status,
+      },
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
 
 router.get('/user/:user_id', async (req, res) => {
   const { user_id } = req.params;
