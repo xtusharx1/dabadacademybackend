@@ -13,6 +13,35 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// Get fee statuses by user_id
+router.get('/user/:user_id', async (req, res) => {
+  const { user_id } = req.params;
+
+  try {
+    const feeStatuses = await FeeStatus.findAll({
+      where: { user_id },
+      attributes: [
+        'id',
+        'admissionDate',
+        'totalFees',
+        'feesSubmitted',
+        'remainingFees',
+        'nextDueDate',
+        'user_id',
+      ],
+    });
+
+    if (feeStatuses.length === 0) {
+      return res.status(404).json({ message: `No fee statuses found for user_id ${user_id}` });
+    }
+
+    res.status(200).json(feeStatuses);
+  } catch (err) {
+    console.error('Error fetching fee statuses by user_id:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/summary', async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
