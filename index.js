@@ -77,8 +77,8 @@ app.get('/', (req, res) => {
     res.send('Welcome to the Dabad API');
 });
 
-// Start the server on a specific port
-const PORT = process.env.PORT || 3000;
+// Start the server on port 3002
+const PORT = 3002; // Use port 3002 as per your server configuration
 server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
