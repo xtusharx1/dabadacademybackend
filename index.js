@@ -43,18 +43,26 @@ const wss = new WebSocket.Server({ server });
 
 // WebSocket connection handler
 wss.on('connection', (ws) => {
-    console.log('New client connected');
+    console.log('New WebSocket client connected');  // Log when a new connection is made
+
+    // Log the connection details
+    console.log(`Connection established with client at: ${new Date().toISOString()}`);
 
     // When a message is received from the client
     ws.on('message', (message) => {
-        console.log('Received:', message);
+        console.log(`Received message: ${message}`);  // Log the received message from client
         // Optionally send a response back to the client
         ws.send('Hello from the server');
     });
 
     // When the WebSocket is closed
     ws.on('close', () => {
-        console.log('Client disconnected');
+        console.log('WebSocket connection closed');
+    });
+
+    // Log any error that occurs
+    ws.on('error', (error) => {
+        console.error(`WebSocket error: ${error.message}`);
     });
 });
 
