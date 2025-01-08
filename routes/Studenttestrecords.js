@@ -91,8 +91,6 @@ router.get('/user/:user_id', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-
-// Get statistics for a specific test_id
 router.get('/statistics/:test_id', async (req, res) => {
     try {
         const { test_id } = req.params;
@@ -103,16 +101,31 @@ router.get('/statistics/:test_id', async (req, res) => {
                 'test_id',
                 [Sequelize.fn('MAX', Sequelize.col('marks_obtained')), 'highest_marks'],
                 [Sequelize.fn('MIN', Sequelize.col('marks_obtained')), 'lowest_marks'],
-                [Sequelize.fn('AVG', Sequelize.col('marks_obtained')), 'average_marks'],
-                'created_at', // Include created_at
-                'updated_at'  // Include updated_at
+                [Sequelize.fn('AVG', Sequelize.col('marks_obtained')), 'average_marks']
             ],
             where: { test_id: test_id },
             group: ['test_id'], // Group by test_id
         });
 
         if (statistics) {
-            res.json(statistics);
+            // Fetch created_at and updated_at for the specific test_id (subquery or additional fetch)
+            const firstRecord = await StudentTestRecords.findOne({
+                attributes: ['created_at', 'updated_at'],
+                where: { test_id: test_id },
+                order: [['created_at', 'ASC']], // Get the first record
+            });
+
+            const lastRecord = await StudentTestRecords.findOne({
+                attributes: ['created_at', 'updated_at'],
+                where: { test_id: test_id },
+                order: [['updated_at', 'DESC']], // Get the last record
+            });
+
+            res.json({
+                ...statistics.dataValues,
+                first_created_at: firstRecord ? firstRecord.created_at : null,
+                last_updated_at: lastRecord ? lastRecord.updated_at : null
+            });
         } else {
             res.status(404).json({ message: `No records found for test ID ${test_id}.` });
         }
@@ -121,5 +134,6 @@ router.get('/statistics/:test_id', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
 
 module.exports = router;
