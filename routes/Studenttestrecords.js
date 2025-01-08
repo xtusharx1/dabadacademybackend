@@ -70,6 +70,35 @@ router.put('/:record_id', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+// Get the rank of a student in a specific test
+router.get('/rank/:test_id/:user_id', async (req, res) => {
+    try {
+        const { test_id, user_id } = req.params;
+
+        // Fetch all test records for the given test_id
+        const records = await StudentTestRecords.findAll({
+            where: { test_id },
+            order: [['marks_obtained', 'DESC']], // Sort by marks in descending order
+            attributes: ['user_id', 'marks_obtained']
+        });
+
+        if (records.length === 0) {
+            return res.status(404).json({ message: 'No records found for this test.' });
+        }
+
+        // Find the rank of the user
+        const rank = records.findIndex(record => record.user_id === parseInt(user_id)) + 1;
+
+        if (rank === 0) {
+            return res.status(404).json({ message: `No records found for user ID ${user_id} in test ID ${test_id}.` });
+        }
+
+        res.json({ test_id, user_id, rank });
+    } catch (error) {
+        console.error(error); // Log the error for debugging
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // Get student test records by user_id
 router.get('/user/:user_id', async (req, res) => {
