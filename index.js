@@ -24,7 +24,7 @@ dotenv.config();
 const app = express();
 app.use(bodyParser.json());
 app.use(cors());
-
+app.use(cors({ origin: 'http://localhost:3003' })); 
 sequelize.sync()
     .then(() => console.log('Database synced'))
     .catch(err => console.error('Unable to sync database:', err));
