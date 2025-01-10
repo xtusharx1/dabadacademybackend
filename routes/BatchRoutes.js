@@ -32,6 +32,21 @@ router.post('/', async (req, res) => {
     res.status(500).json({ message: 'Error creating batch', error });
   }
 });
+router.delete('/:batch_id', async (req, res) => {
+  const { batch_id } = req.params;
+  try {
+    const batch = await Batch.findByPk(batch_id);
+    if (!batch) {
+      return res.status(404).json({ message: 'Batch not found' });
+    }
+    
+    await batch.destroy();
+    res.status(200).json({ message: 'Batch deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting batch:', error);
+    res.status(500).json({ message: 'Error deleting batch', error });
+  }
+});
 
 router.get('/:batch_id', async (req, res) => {
   const { batch_id } = req.params;
