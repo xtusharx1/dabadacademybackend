@@ -4,8 +4,6 @@ const dotenv = require('dotenv');
 const sequelize = require('./config/db');
 const cors = require('cors');
 const http = require('http');
-const WebSocket = require('ws');
-
 const userRoutes = require('./routes/user');
 const attendanceRoutes = require('./routes/AttendanceRoutes');
 const feePaymentRoutes = require('./routes/FeePaymentRecordRoutes');
@@ -29,20 +27,7 @@ sequelize.sync()
     .catch(err => console.error('Unable to sync database:', err));
 
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
 
-wss.on('connection', (ws) => {
-    console.log('New WebSocket client connected');
-    console.log(`Connection established with client at: ${new Date().toISOString()}`);
-
-    ws.on('message', (message) => {
-        console.log(`Received message: ${message}`);
-        ws.send('Hello from the server');
-    });
-
-    ws.on('close', () => console.log('WebSocket connection closed'));
-    ws.on('error', (error) => console.error(`WebSocket error: ${error.message}`));
-});
 
 app.use('/api/users', userRoutes);
 app.use('/api/attendance', attendanceRoutes);
