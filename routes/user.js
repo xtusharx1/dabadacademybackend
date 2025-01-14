@@ -4,7 +4,6 @@ const User = require('../models/user');
 const sequelize = require('../config/db');
 
 const router = express.Router();
-
 router.post('/register', async (req, res) => {
   const {
     name, email, password, role_id, phone_number, date_of_admission,
@@ -30,6 +29,15 @@ router.post('/register', async (req, res) => {
       }
     }
 
+    // Parse dates from DD-MM-YY format to YYYY-MM-DD
+    const parseDate = (dateStr) => {
+      if (!dateStr) return null;
+      const [day, month, year] = dateStr.split('-');
+      // Assuming year is in YY format, convert to YYYY
+      const fullYear = parseInt(year) + 2000; // This works for years 2000-2099
+      return `${fullYear}-${month}-${day}`;
+    };
+
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -39,9 +47,9 @@ router.post('/register', async (req, res) => {
       password_hash: hashedPassword,
       role_id,
       phone_number,
-      date_of_admission,
+      date_of_admission: parseDate(date_of_admission),
       present_class,
-      date_of_birth,
+      date_of_birth: parseDate(date_of_birth),
       total_course_fees,
       father_name,
       mother_name,
@@ -54,11 +62,13 @@ router.post('/register', async (req, res) => {
       previous_school_info,
       gender,
       state,
-      status, // Include status field
+      status,
     };
 
-    // Create the new user
-    const createdUser = await User.create(newUser);
+    // Create the new user without timestamps
+    const createdUser = await User.create(newUser, {
+      silent: true // This prevents automatic timestamp handling
+    });
 
     res.status(201).json({
       message: 'User registered successfully',
@@ -67,7 +77,7 @@ router.post('/register', async (req, res) => {
         name: createdUser.name,
         email: createdUser.email,
         phone_number: createdUser.phone_number,
-        status: createdUser.status, // Include status in the response
+        status: createdUser.status,
       },
     });
   } catch (error) {

@@ -19,7 +19,7 @@ const StudentTestRecordsRoutes = require('./routes/Studenttestrecords');
 
 dotenv.config();
 
-const app = express();
+const app = express();;
 app.use(bodyParser.json());
 app.use(cors());
 sequelize.sync()
