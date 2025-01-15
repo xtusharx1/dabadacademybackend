@@ -200,7 +200,6 @@ router.get('/user/:user_id', async (req, res) => {
   }
 });
 
-
 // Get users by role_id
 router.get('/role/:role_id', async (req, res) => {
   const { role_id } = req.params;
@@ -208,7 +207,8 @@ router.get('/role/:role_id', async (req, res) => {
   try {
     const usersByRole = await User.findAll({
       where: { role_id },
-      attributes: ['user_id', 'name', 'email', 'phone_number', 'status', 'created_at','date_of_admission'], // Include created_at
+      attributes: ['user_id', 'name', 'email', 'phone_number', 'status', 'created_at', 'date_of_admission'], // Include created_at
+      order: [['created_at', 'DESC']], // Sort by created_at in descending order
     });
 
     if (usersByRole.length === 0) {
@@ -221,6 +221,7 @@ router.get('/role/:role_id', async (req, res) => {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
+
 
 
 // Get user counts by role_id and status
