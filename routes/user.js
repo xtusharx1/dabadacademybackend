@@ -208,7 +208,7 @@ router.get('/role/:role_id', async (req, res) => {
   try {
     const usersByRole = await User.findAll({
       where: { role_id },
-      attributes: ['user_id', 'name', 'email', 'phone_number', 'status', 'created_at'], // Include created_at
+      attributes: ['user_id', 'name', 'email', 'phone_number', 'status', 'date_of_admission'], // Include created_at
     });
 
     if (usersByRole.length === 0) {
