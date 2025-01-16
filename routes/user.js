@@ -222,6 +222,26 @@ router.get('/role/:role_id', async (req, res) => {
   }
 });
 
+// Get admission date and total course fee by user_id
+router.get('/admissions/:user_id', async (req, res) => {
+  const { user_id } = req.params;
+
+  try {
+    const user = await User.findOne({
+      where: { user_id },
+      attributes: ['user_id', 'name', 'date_of_admission', 'total_course_fees'], // Select only required fields
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: `User with id ${user_id} not found` });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error('Error fetching admission data for user:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
 
 
 // Get user counts by role_id and status
