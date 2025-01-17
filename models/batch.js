@@ -20,6 +20,11 @@ module.exports = sequelize.define('Batch', {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
   },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true, // By default, the batch is active
+    allowNull: false,
+  },
 }, {
   tableName: 'Batches',
   timestamps: false,
