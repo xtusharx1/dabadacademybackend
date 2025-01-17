@@ -67,6 +67,28 @@ router.get('/:batch_id', async (req, res) => {
     res.status(500).json({ message: 'Error fetching batch', error });
   }
 });
+// Update a batch completely (PUT request)
+router.put('/:batch_id', async (req, res) => {
+  const { batch_id } = req.params;
+  const { batch_name, is_active } = req.body;  // You can update batch_name and is_active (active/inactive status)
+
+  try {
+    const batch = await Batch.findByPk(batch_id);
+    if (!batch) {
+      return res.status(404).json({ message: 'Batch not found' });
+    }
+
+    // Update the batch with the new details
+    batch.batch_name = batch_name || batch.batch_name;  // Retain existing value if no new value provided
+    batch.is_active = is_active !== undefined ? is_active : batch.is_active;  // Retain existing value if no new value provided
+
+    await batch.save();
+    res.status(200).json({ message: 'Batch updated successfully', batch });
+  } catch (error) {
+    console.error('Error updating batch:', error);
+    res.status(500).json({ message: 'Error updating batch', error });
+  }
+});
 
 // Mark a batch as inactive
 router.patch('/:batch_id/inactive', async (req, res) => {
