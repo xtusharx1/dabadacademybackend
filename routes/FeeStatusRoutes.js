@@ -77,8 +77,8 @@ router.get('/summary', async (req, res) => {
 });
 router.get('/upcoming-dues', async (req, res) => {
   try {
-    // Fetch all students with their upcoming fee dues
-    const upcomingDues = await FeeStatus.findAll({
+    // Fetch all records from the database
+    const allDues = await FeeStatus.findAll({
       attributes: [
         'id',
         'admissionDate',
@@ -88,19 +88,18 @@ router.get('/upcoming-dues', async (req, res) => {
         'nextDueDate',
         'user_id',
       ],
-      where: {
-        nextDueDate: {
-          [Sequelize.Op.gt]: new Date(), // Fetch records where the nextDueDate is greater than today
-        },
-      },
-      order: [['nextDueDate', 'ASC']], // Sort by the closest due date
     });
 
-    res.json(upcomingDues);
+    // Sort the results by nextDueDate in ascending order
+    const sortedDues = allDues.sort((a, b) => new Date(a.nextDueDate) - new Date(b.nextDueDate));
+
+    res.json(sortedDues);
   } catch (err) {
+    console.error("Error fetching all dues:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
+
 // Get a single fee status by ID
 router.get('/:id', async (req, res) => {
   try {
