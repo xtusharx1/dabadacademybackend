@@ -126,12 +126,20 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update a fee status (with paymentCompleted)
 router.put('/:id', async (req, res) => {
   try {
-    const [updated] = await FeeStatus.update(req.body, {
+    const { paymentCompleted, nextDueDate, feesSubmitted, remainingFees } = req.body;
+
+    // Check if payment is completed and set nextDueDate to null
+    const updatedData = {
+      ...req.body,
+      nextDueDate: paymentCompleted ? null : nextDueDate, // Set nextDueDate to null if payment is completed
+    };
+
+    const [updated] = await FeeStatus.update(updatedData, {
       where: { id: req.params.id },
     });
+
     if (!updated) return res.status(404).json({ error: 'Fee status not found' });
 
     const updatedFeeStatus = await FeeStatus.findByPk(req.params.id);
@@ -140,6 +148,7 @@ router.put('/:id', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // Delete a fee status
 router.delete('/:id', async (req, res) => {

@@ -20,7 +20,7 @@ const FeeStatus = sequelize.define('FeeStatus', {
   },
   nextDueDate: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   user_id: { // Foreign key column for User
     type: DataTypes.INTEGER,
