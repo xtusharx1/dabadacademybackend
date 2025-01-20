@@ -7,12 +7,13 @@ const router = express.Router();
 // Get all fee statuses
 router.get('/', async (req, res) => {
   try {
-    const feeStatuses = await FeeStatus.findAll(); // Remove the 'include' property
+    const feeStatuses = await FeeStatus.findAll(); // This now includes paymentCompleted field
     res.json(feeStatuses);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
 // Get fee statuses by user_id
 router.get('/user/:user_id', async (req, res) => {
   const { user_id } = req.params;
@@ -28,6 +29,7 @@ router.get('/user/:user_id', async (req, res) => {
         'remainingFees',
         'nextDueDate',
         'user_id',
+        'paymentCompleted', // Add this to the response
       ],
     });
 
@@ -42,21 +44,19 @@ router.get('/user/:user_id', async (req, res) => {
   }
 });
 
+// Summary endpoint
 router.get('/summary', async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
 
-    // Total number of students
     const totalStudents = await FeeStatus.count();
 
-    // Total due fees (sum of remaining fees)
     const totalDueFee = await FeeStatus.findOne({
       attributes: [
         [Sequelize.literal('SUM(CAST("remainingFees" AS NUMERIC))'), 'totalDueFee'],
       ],
     });
 
-    // Total fees due today
     const totalDueToday = await FeeStatus.findOne({
       attributes: [
         [Sequelize.literal('SUM(CAST("remainingFees" AS NUMERIC))'), 'totalDueToday'],
@@ -75,9 +75,10 @@ router.get('/summary', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Fetch upcoming dues, including payment status
 router.get('/upcoming-dues', async (req, res) => {
   try {
-    // Fetch all records from the database
     const allDues = await FeeStatus.findAll({
       attributes: [
         'id',
@@ -87,10 +88,10 @@ router.get('/upcoming-dues', async (req, res) => {
         'remainingFees',
         'nextDueDate',
         'user_id',
+        'paymentCompleted', // Add paymentCompleted to the results
       ],
     });
 
-    // Sort the results by nextDueDate in ascending order
     const sortedDues = allDues.sort((a, b) => new Date(a.nextDueDate) - new Date(b.nextDueDate));
 
     res.json(sortedDues);
@@ -103,7 +104,7 @@ router.get('/upcoming-dues', async (req, res) => {
 // Get a single fee status by ID
 router.get('/:id', async (req, res) => {
   try {
-    const feeStatus = await FeeStatus.findByPk(req.params.id); // Remove the 'include' property
+    const feeStatus = await FeeStatus.findByPk(req.params.id); 
     if (!feeStatus) return res.status(404).json({ error: 'Fee status not found' });
     res.json(feeStatus);
   } catch (err) {
@@ -111,21 +112,28 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create a new fee status
+// Create a new fee status (with paymentCompleted)
 router.post('/', async (req, res) => {
   try {
-    const feeStatus = await FeeStatus.create(req.body);
+    // Ensure the paymentCompleted field is included in the request body
+    const feeStatus = await FeeStatus.create({
+      ...req.body, // Includes the paymentCompleted field from the request body
+      paymentCompleted: req.body.paymentCompleted || false, // Default to false if not provided
+    });
     res.status(201).json(feeStatus);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Update a fee status
+// Update a fee status (with paymentCompleted)
 router.put('/:id', async (req, res) => {
   try {
-    const [updated] = await FeeStatus.update(req.body, { where: { id: req.params.id } });
+    const [updated] = await FeeStatus.update(req.body, {
+      where: { id: req.params.id },
+    });
     if (!updated) return res.status(404).json({ error: 'Fee status not found' });
+
     const updatedFeeStatus = await FeeStatus.findByPk(req.params.id);
     res.json(updatedFeeStatus);
   } catch (err) {

@@ -31,6 +31,11 @@ const FeeStatus = sequelize.define('FeeStatus', {
     },
     onDelete: 'CASCADE', // Deletes FeeStatus entries if the referenced User is deleted
   },
+  paymentCompleted: { // New column to track payment completion status
+    type: DataTypes.BOOLEAN,
+    defaultValue: false, // Default value is false, indicating payment is not completed
+    allowNull: false,
+  },
 }, {
   tableName: 'FeeStatus',
   timestamps: false,
