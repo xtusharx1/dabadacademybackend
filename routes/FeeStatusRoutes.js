@@ -130,7 +130,6 @@ router.put('/:id', async (req, res) => {
   try {
     const { paymentCompleted, nextDueDate, feesSubmitted, remainingFees } = req.body;
 
-    // Check if payment is completed and set nextDueDate to null
     const updatedData = {
       ...req.body,
       nextDueDate: paymentCompleted ? null : nextDueDate, // Set nextDueDate to null if payment is completed
@@ -148,6 +147,7 @@ router.put('/:id', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 
 // Delete a fee status

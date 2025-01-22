@@ -277,11 +277,13 @@ router.get('/roles/count', async (req, res) => {
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
+  // Validate input
   if (!email || !password) {
     return res.status(400).json({ message: 'Please provide both email and password' });
   }
 
   try {
+    // Find user by email
     const user = await User.findOne({ where: { email } });
 
     if (!user) {
@@ -300,6 +302,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    // Return user details with role_id
     res.status(200).json({
       message: 'Login successful',
       user: {
@@ -307,6 +310,7 @@ router.post('/login', async (req, res) => {
         name: user.name,
         email: user.email,
         phone_number: user.phone_number,
+        role_id: user.role_id, // Include role_id in the response
         status: user.status,
       },
     });
@@ -315,5 +319,4 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
-
 module.exports = router;
