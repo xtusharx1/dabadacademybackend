@@ -272,8 +272,6 @@ router.get('/roles/count', async (req, res) => {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
-
-// Login route
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -292,7 +290,9 @@ router.post('/login', async (req, res) => {
 
     // Check if the user is active
     if (user.status !== 'active') {
-      return res.status(403).json({ message: 'User is inactive' });
+      return res.status(403).json({
+        message: 'Your account is inactive. Please contact the admin to activate your account.',
+      });
     }
 
     // Compare password
@@ -319,4 +319,5 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
+
 module.exports = router;
