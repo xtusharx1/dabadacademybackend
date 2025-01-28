@@ -86,7 +86,6 @@ router.post('/register', async (req, res) => {
   }
 });
 // Update user by user_id
-const bcrypt = require('bcryptjs');
 
 router.put('/user/:user_id', async (req, res) => {
   const { user_id } = req.params;
