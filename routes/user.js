@@ -270,16 +270,15 @@ router.get('/roles/count', async (req, res) => {
       attributes: [
         'role_id',
         [sequelize.fn('COUNT', sequelize.col('role_id')), 'count'],
-        'status', // Include status in the count
       ],
-      group: ['role_id', 'status'], // Group by role_id and status
+      group: ['role_id'], // Only group by role_id, not by status
     });
 
     const totalUsers = await User.count();
 
+    // Construct the result to have one entry for each role_id, with the count of users
     const result = roleCounts.map(role => ({
       role_id: role.role_id,
-      status: role.status,
       count: role.dataValues.count,
     }));
 
@@ -291,6 +290,7 @@ router.get('/roles/count', async (req, res) => {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
+
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
