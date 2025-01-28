@@ -86,7 +86,6 @@ router.post('/register', async (req, res) => {
   }
 });
 // Update user by user_id
-
 router.put('/user/:user_id', async (req, res) => {
   const { user_id } = req.params;
   const {
@@ -110,10 +109,14 @@ router.put('/user/:user_id', async (req, res) => {
     gender,
     state,
     status,
-    password, // Include password
+    password_hash, // Rename the field from "password" to "password_hash"
   } = req.body;
 
+  // Log incoming request body to see if it's parsed correctly
+  console.log("Request Body:", req.body);
+
   try {
+    // Fetch user by user_id
     const user = await User.findOne({ where: { user_id } });
 
     if (!user) {
@@ -144,17 +147,17 @@ router.put('/user/:user_id', async (req, res) => {
       status,
     };
 
-    // If password is provided, hash it and include it in the update
-    if (password) {
+    // If password_hash is provided, hash it and include it in the update
+    if (password_hash) {
       console.log("Password provided, hashing...");
       const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(password, saltRounds);
-      updatedFields.password = hashedPassword;
+      const hashedPassword = await bcrypt.hash(password_hash, saltRounds);
+      updatedFields.password_hash = hashedPassword; // Save hashed password to password_hash field
     }
 
     console.log("Updating user with the following fields:", updatedFields); // Log for debugging
 
-    // Update user fields
+    // Update user fields in the database
     const updatedUser = await user.update(updatedFields);
 
     res.status(200).json({
