@@ -86,6 +86,8 @@ router.post('/register', async (req, res) => {
   }
 });
 // Update user by user_id
+const bcrypt = require('bcryptjs');
+
 router.put('/user/:user_id', async (req, res) => {
   const { user_id } = req.params;
   const {
@@ -119,6 +121,7 @@ router.put('/user/:user_id', async (req, res) => {
       return res.status(404).json({ message: `User with id ${user_id} not found` });
     }
 
+    // Prepare updated fields
     let updatedFields = {
       name,
       email,
@@ -144,10 +147,13 @@ router.put('/user/:user_id', async (req, res) => {
 
     // If password is provided, hash it and include it in the update
     if (password) {
+      console.log("Password provided, hashing...");
       const saltRounds = 10;
       const hashedPassword = await bcrypt.hash(password, saltRounds);
       updatedFields.password = hashedPassword;
     }
+
+    console.log("Updating user with the following fields:", updatedFields); // Log for debugging
 
     // Update user fields
     const updatedUser = await user.update(updatedFields);
@@ -167,6 +173,7 @@ router.put('/user/:user_id', async (req, res) => {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
+
 
 router.get('/user/:user_id', async (req, res) => {
   const { user_id } = req.params;
