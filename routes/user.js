@@ -109,6 +109,7 @@ router.put('/user/:user_id', async (req, res) => {
     gender,
     state,
     status,
+    password, // Include password
   } = req.body;
 
   try {
@@ -118,8 +119,7 @@ router.put('/user/:user_id', async (req, res) => {
       return res.status(404).json({ message: `User with id ${user_id} not found` });
     }
 
-    // Update user fields
-    const updatedUser = await user.update({
+    let updatedFields = {
       name,
       email,
       role_id,
@@ -140,7 +140,17 @@ router.put('/user/:user_id', async (req, res) => {
       gender,
       state,
       status,
-    });
+    };
+
+    // If password is provided, hash it and include it in the update
+    if (password) {
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      updatedFields.password = hashedPassword;
+    }
+
+    // Update user fields
+    const updatedUser = await user.update(updatedFields);
 
     res.status(200).json({
       message: 'User updated successfully',
