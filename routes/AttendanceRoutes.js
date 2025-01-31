@@ -17,6 +17,35 @@ router.get('/', async (req, res) => {
     res.status(500).json({ message: 'Server error', error });
   }
 });
+// Route: Add multiple attendance records
+router.post('/bulk', async (req, res) => {
+  const { records } = req.body;
+
+  if (!records || !Array.isArray(records) || records.length === 0) {
+    return res.status(400).json({ message: 'Attendance records are required' });
+  }
+
+  // Validate each record
+  for (let record of records) {
+    const { user_id, batch_id, subject_id, status, attendance_date } = record;
+
+    if (!user_id || !batch_id || !subject_id || !status || !attendance_date) {
+      return res.status(400).json({ message: 'User ID, Batch ID, Subject ID, Status, and Attendance Date are required for each record' });
+    }
+  }
+
+  try {
+    // Insert multiple attendance records at once
+    const newAttendanceRecords = await Attendance.bulkCreate(records);
+    res.status(201).json({
+      message: 'Attendance records added successfully',
+      attendance: newAttendanceRecords
+    });
+  } catch (error) {
+    console.error('Error adding attendance records:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
 
 // Route: Fetch attendance by user_id
 router.get('/user/:user_id', async (req, res) => {
