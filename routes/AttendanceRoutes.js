@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Attendance, Subjects } = require('../models/attendance');  // Import your models
+const { Attendance } = require('../models/attendance');  // Import only the Attendance model
 
 // Create a new attendance record
 router.post('/', async (req, res) => {
@@ -29,8 +29,7 @@ router.post('/', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const attendanceRecords = await Attendance.findAll({
-      include: [{ model: Subjects, attributes: ['subject_name'] }],
-      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name', 'reason'],  // Include reason in the response
+      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name', 'reason'],  // Only attendance fields
     });
     res.status(200).json(attendanceRecords);
   } catch (error) {
@@ -45,8 +44,7 @@ router.get('/user/:user_id', async (req, res) => {
     const { user_id } = req.params;
     const attendanceRecords = await Attendance.findAll({
       where: { user_id },
-      include: [{ model: Subjects, attributes: ['subject_name'] }],
-      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name', 'reason'],  // Include reason in the response
+      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name', 'reason'],  // Only attendance fields
     });
     if (attendanceRecords.length === 0) {
       return res.status(404).json({ message: 'No attendance records found for this user' });
@@ -107,33 +105,22 @@ router.delete('/:attendance_id', async (req, res) => {
   }
 });
 
-// Get batch attendance subject-wise
+// Get batch attendance for a specific batch_id
 router.get('/batch/:batch_id', async (req, res) => {
   try {
     const { batch_id } = req.params;
 
-    // Fetch attendance records for the batch, grouped by subject
+    // Fetch attendance records for the batch
     const attendanceRecords = await Attendance.findAll({
       where: { batch_id },
-      include: [{ model: Subjects, attributes: ['subject_name'] }],
-      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name', 'reason'],  // Include reason in the response
+      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name', 'reason'],  // Only attendance fields
     });
 
     if (attendanceRecords.length === 0) {
       return res.status(404).json({ message: 'No attendance records found for this batch' });
     }
 
-    // Group attendance records by subject_name
-    const groupedBySubject = attendanceRecords.reduce((acc, record) => {
-      const subjectName = record.Subject.subject_name;
-      if (!acc[subjectName]) {
-        acc[subjectName] = [];
-      }
-      acc[subjectName].push(record);
-      return acc;
-    }, {});
-
-    res.status(200).json(groupedBySubject);
+    res.status(200).json(attendanceRecords);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error fetching batch attendance records' });
@@ -152,8 +139,7 @@ router.get('/batch/:batch_id/subject/:subject_id/date/:date', async (req, res) =
         subject_id,
         attendance_date: date,  // Filter by the provided date (in YYYY-MM-DD format)
       },
-      include: [{ model: Subjects, attributes: ['subject_name'] }],
-      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name', 'reason'],  // Include reason in the response
+      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name', 'reason'],  // Only attendance fields
     });
 
     if (attendanceRecords.length === 0) {
