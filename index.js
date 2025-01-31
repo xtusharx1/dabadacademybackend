@@ -16,7 +16,8 @@ const studentBatchRoutes = require('./routes/StudentBatchRoutes');
 const RoleRoutes = require('./routes/RoleRoutes');
 const TestRoutes = require('./routes/tests');
 const StudentTestRecordsRoutes = require('./routes/Studenttestrecords');
-
+const AttendanceRoutes = require('./routes/AttendanceRoutes');
+const subjectRoutes = require('./routes/SubjectRoutes');
 dotenv.config();
 
 const app = express();;
@@ -41,8 +42,9 @@ app.use('/api/studentBatches', studentBatchRoutes);
 app.use('/api/role', RoleRoutes);
 app.use('/api/test', TestRoutes);
 app.use('/api/studenttestrecords', StudentTestRecordsRoutes);
-
-app.get('/', (req, res) => res.send('Welcome to the Dabad API'));
+app.use('/api/subjects', subjectRoutes);
+app.use('/api/attendance', AttendanceRoutes);
+app.get('/', (req, res) => res.send('Welcome to the Dabad Academy API'));
 
 const PORT = 3002;
 server.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

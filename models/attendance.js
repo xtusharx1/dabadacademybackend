@@ -1,40 +1,45 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/db');
-
-const Attendance = sequelize.define('Attendance', {
-  attendance_id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-  },
-  student_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: 'Users', // Refers to the 'Users' table
-      key: 'user_id', // Refers to the 'user_id' column in the 'Users' table
+module.exports = (sequelize, DataTypes) => {
+  const Attendance = sequelize.define("Attendance", {
+    attendance_id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
     },
-    onDelete: 'CASCADE', // Deletes attendance if the corresponding user is deleted
-  },
-  attendance_date: {
-    type: DataTypes.DATE,
-    allowNull: false,
-  },
-  status: {
-    type: DataTypes.ENUM('present', 'absent'),
-    allowNull: false,
-  },
-  created_at: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-  },
-  updated_at: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-  }
-}, {
-  tableName: 'Attendance',
-  timestamps: false,
-});
+    user_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    batch_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    subject_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Subjects',
+        key: 'subject_id',
+      },
+      onDelete: 'CASCADE',
+    },
+    status: {
+      type: DataTypes.ENUM("Present", "Absent", "Late"),
+      allowNull: false,
+    },
+    attendance_date: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+    },
+    teacher_name: {
+      type: DataTypes.STRING,
+      allowNull: false,  // Change to `true` if optional
+    }
+  });
 
-module.exports = Attendance;
+  Attendance.associate = (models) => {
+    Attendance.belongsTo(models.Subjects, { foreignKey: 'subject_id' });
+  };
+
+  return Attendance;
+};
