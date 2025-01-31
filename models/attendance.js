@@ -33,8 +33,12 @@ module.exports = (sequelize, DataTypes) => {
     },
     teacher_name: {
       type: DataTypes.STRING,
-      allowNull: false,  // Change to `true` if optional
-    }
+      allowNull: false,
+    },
+    reason: {
+      type: DataTypes.STRING,
+      allowNull: true,  // Optional field for absence or late status
+    },
   });
 
   Attendance.associate = (models) => {

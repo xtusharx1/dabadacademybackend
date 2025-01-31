@@ -5,7 +5,7 @@ const { Attendance, Subjects } = require('../models/attendance');  // Import you
 // Create a new attendance record
 router.post('/', async (req, res) => {
   try {
-    const { user_id, batch_id, subject_id, status, attendance_date, teacher_name } = req.body;
+    const { user_id, batch_id, subject_id, status, attendance_date, teacher_name, reason } = req.body;
 
     // Create a new attendance entry
     const attendance = await Attendance.create({
@@ -14,7 +14,8 @@ router.post('/', async (req, res) => {
       subject_id,
       status,
       attendance_date,
-      teacher_name  // Add teacher_name field
+      teacher_name,
+      reason  // Add reason field
     });
 
     res.status(201).json({ message: 'Attendance record created successfully', attendance });
@@ -29,7 +30,7 @@ router.get('/', async (req, res) => {
   try {
     const attendanceRecords = await Attendance.findAll({
       include: [{ model: Subjects, attributes: ['subject_name'] }],
-      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name'],  // Include teacher_name in the response
+      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name', 'reason'],  // Include reason in the response
     });
     res.status(200).json(attendanceRecords);
   } catch (error) {
@@ -45,7 +46,7 @@ router.get('/user/:user_id', async (req, res) => {
     const attendanceRecords = await Attendance.findAll({
       where: { user_id },
       include: [{ model: Subjects, attributes: ['subject_name'] }],
-      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name'],  // Include teacher_name in the response
+      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name', 'reason'],  // Include reason in the response
     });
     if (attendanceRecords.length === 0) {
       return res.status(404).json({ message: 'No attendance records found for this user' });
@@ -61,7 +62,7 @@ router.get('/user/:user_id', async (req, res) => {
 router.put('/:attendance_id', async (req, res) => {
   try {
     const { attendance_id } = req.params;
-    const { user_id, batch_id, subject_id, status, attendance_date, teacher_name } = req.body;
+    const { user_id, batch_id, subject_id, status, attendance_date, teacher_name, reason } = req.body;
 
     const attendance = await Attendance.findByPk(attendance_id);
     if (!attendance) {
@@ -74,7 +75,8 @@ router.put('/:attendance_id', async (req, res) => {
     attendance.subject_id = subject_id || attendance.subject_id;
     attendance.status = status || attendance.status;
     attendance.attendance_date = attendance_date || attendance.attendance_date;
-    attendance.teacher_name = teacher_name || attendance.teacher_name;  // Update teacher_name
+    attendance.teacher_name = teacher_name || attendance.teacher_name;
+    attendance.reason = reason || attendance.reason;  // Update reason
 
     await attendance.save();
 
@@ -114,7 +116,7 @@ router.get('/batch/:batch_id', async (req, res) => {
     const attendanceRecords = await Attendance.findAll({
       where: { batch_id },
       include: [{ model: Subjects, attributes: ['subject_name'] }],
-      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name'],  // Include teacher_name in the response
+      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name', 'reason'],  // Include reason in the response
     });
 
     if (attendanceRecords.length === 0) {
@@ -151,7 +153,7 @@ router.get('/batch/:batch_id/subject/:subject_id/date/:date', async (req, res) =
         attendance_date: date,  // Filter by the provided date (in YYYY-MM-DD format)
       },
       include: [{ model: Subjects, attributes: ['subject_name'] }],
-      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name'],  // Include teacher_name in the response
+      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name', 'reason'],  // Include reason in the response
     });
 
     if (attendanceRecords.length === 0) {
