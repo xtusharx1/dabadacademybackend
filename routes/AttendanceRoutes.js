@@ -1,155 +1,154 @@
 const express = require('express');
+const Attendance = require('../models/attendance'); // Import the Attendance model
+const StudentBatch = require('../models/studentbatch'); // Import the StudentBatch model
 const router = express.Router();
-const { Attendance } = require('../models/attendance');  // Import only the Attendance model
 
-// Create a new attendance record
-router.post('/', async (req, res) => {
+// Route: Fetch all attendance records
+router.get('/attendance', async (req, res) => {
   try {
-    const { user_id, batch_id, subject_id, status, attendance_date, teacher_name, reason } = req.body;
+    const attendanceData = await Attendance.findAll({
+      attributes: ['user_id', 'batch_id', 'attendance_date', 'status'], // Specify fields
+    });
 
-    // Create a new attendance entry
-    const attendance = await Attendance.create({
+    if (!attendanceData.length) {
+      return res.status(404).json({ message: 'No attendance records found' });
+    }
+
+    res.status(200).json(attendanceData);
+  } catch (error) {
+    console.error('Error fetching attendance records:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+
+// Route: Fetch attendance records for a specific batch
+router.get('/attendance/batch/:batch_id', async (req, res) => {
+  const { batch_id } = req.params;
+
+  if (!batch_id || isNaN(batch_id)) {
+    return res.status(400).json({ message: 'Valid Batch ID is required' });
+  }
+
+  try {
+    const attendanceData = await Attendance.findAll({
+      where: { batch_id },
+      attributes: ['user_id', 'batch_id', 'attendance_date', 'status'],
+    });
+
+    if (!attendanceData.length) {
+      return res.status(404).json({ message: `No attendance records found for batch ${batch_id}` });
+    }
+
+    res.status(200).json(attendanceData);
+  } catch (error) {
+    console.error('Error fetching attendance records for batch:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+
+// Route: Add attendance for a student in a specific batch
+router.post('/attendance', async (req, res) => {
+  const { batch_id, user_id, attendance_date, status } = req.body;
+
+  if (!batch_id || !user_id || !attendance_date || !status || isNaN(batch_id) || isNaN(user_id)) {
+    return res.status(400).json({ message: 'Batch ID, User ID, attendance date, and status are required and must be valid' });
+  }
+
+  try {
+    // Check if the student exists in the batch
+    const studentInBatch = await StudentBatch.findOne({ where: { batch_id, user_id } });
+
+    if (!studentInBatch) {
+      return res.status(404).json({ message: `Student ${user_id} is not part of batch ${batch_id}` });
+    }
+
+    const newAttendance = await Attendance.create({
       user_id,
       batch_id,
-      subject_id,
-      status,
       attendance_date,
-      teacher_name,
-      reason  // Add reason field
+      status,
     });
 
-    res.status(201).json({ message: 'Attendance record created successfully', attendance });
+    res.status(201).json({ message: 'Attendance added successfully', attendance: newAttendance });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error creating attendance record' });
+    console.error('Error adding attendance:', error);
+    res.status(500).json({ message: 'Server error', error });
   }
 });
 
-// Get all attendance records
-router.get('/', async (req, res) => {
+// Route: Update attendance for a student in a batch
+router.put('/attendance', async (req, res) => {
+  const { batch_id, user_id, attendance_date, status } = req.body;
+
+  if (!batch_id || !user_id || !attendance_date || !status || isNaN(batch_id) || isNaN(user_id)) {
+    return res.status(400).json({ message: 'Batch ID, User ID, attendance date, and status are required and must be valid' });
+  }
+
   try {
-    const attendanceRecords = await Attendance.findAll({
-      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name', 'reason'],  // Only attendance fields
+    const attendanceRecord = await Attendance.findOne({
+      where: { batch_id, user_id, attendance_date },
     });
-    res.status(200).json(attendanceRecords);
+
+    if (!attendanceRecord) {
+      return res.status(404).json({ message: `Attendance record not found for student ${user_id} in batch ${batch_id} on ${attendance_date}` });
+    }
+
+    attendanceRecord.status = status;
+    await attendanceRecord.save();
+
+    res.status(200).json({ message: 'Attendance updated successfully', attendance: attendanceRecord });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error fetching attendance records' });
+    console.error('Error updating attendance:', error);
+    res.status(500).json({ message: 'Server error', error });
   }
 });
 
-// Get attendance records by user_id
-router.get('/user/:user_id', async (req, res) => {
+// Route: Delete attendance record for a student in a batch
+router.delete('/attendance', async (req, res) => {
+  const { batch_id, user_id, attendance_date } = req.body;
+
+  if (!batch_id || !user_id || !attendance_date || isNaN(batch_id) || isNaN(user_id)) {
+    return res.status(400).json({ message: 'Batch ID, User ID, and attendance date are required and must be valid' });
+  }
+
   try {
-    const { user_id } = req.params;
-    const attendanceRecords = await Attendance.findAll({
-      where: { user_id },
-      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name', 'reason'],  // Only attendance fields
+    const deletedCount = await Attendance.destroy({
+      where: { batch_id, user_id, attendance_date },
     });
-    if (attendanceRecords.length === 0) {
-      return res.status(404).json({ message: 'No attendance records found for this user' });
+
+    if (!deletedCount) {
+      return res.status(404).json({ message: `No attendance record found for student ${user_id} in batch ${batch_id} on ${attendance_date}` });
     }
-    res.status(200).json(attendanceRecords);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error fetching attendance records' });
-  }
-});
-
-// Update an attendance record by attendance_id
-router.put('/:attendance_id', async (req, res) => {
-  try {
-    const { attendance_id } = req.params;
-    const { user_id, batch_id, subject_id, status, attendance_date, teacher_name, reason } = req.body;
-
-    const attendance = await Attendance.findByPk(attendance_id);
-    if (!attendance) {
-      return res.status(404).json({ message: 'Attendance record not found' });
-    }
-
-    // Update the attendance record
-    attendance.user_id = user_id || attendance.user_id;
-    attendance.batch_id = batch_id || attendance.batch_id;
-    attendance.subject_id = subject_id || attendance.subject_id;
-    attendance.status = status || attendance.status;
-    attendance.attendance_date = attendance_date || attendance.attendance_date;
-    attendance.teacher_name = teacher_name || attendance.teacher_name;
-    attendance.reason = reason || attendance.reason;  // Update reason
-
-    await attendance.save();
-
-    res.status(200).json({ message: 'Attendance record updated successfully', attendance });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error updating attendance record' });
-  }
-});
-
-// Delete an attendance record by attendance_id
-router.delete('/:attendance_id', async (req, res) => {
-  try {
-    const { attendance_id } = req.params;
-
-    const attendance = await Attendance.findByPk(attendance_id);
-    if (!attendance) {
-      return res.status(404).json({ message: 'Attendance record not found' });
-    }
-
-    // Delete the attendance record
-    await attendance.destroy();
 
     res.status(200).json({ message: 'Attendance record deleted successfully' });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error deleting attendance record' });
+    console.error('Error deleting attendance record:', error);
+    res.status(500).json({ message: 'Server error', error });
   }
 });
 
-// Get batch attendance for a specific batch_id
-router.get('/batch/:batch_id', async (req, res) => {
-  try {
-    const { batch_id } = req.params;
+// Route: Search attendance for a student
+router.get('/attendance/search/:user_id', async (req, res) => {
+  const { user_id } = req.params;
 
-    // Fetch attendance records for the batch
-    const attendanceRecords = await Attendance.findAll({
-      where: { batch_id },
-      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name', 'reason'],  // Only attendance fields
-    });
-
-    if (attendanceRecords.length === 0) {
-      return res.status(404).json({ message: 'No attendance records found for this batch' });
-    }
-
-    res.status(200).json(attendanceRecords);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error fetching batch attendance records' });
+  if (!user_id || isNaN(user_id)) {
+    return res.status(400).json({ message: 'Valid User ID is required' });
   }
-});
 
-// Get attendance for a specific batch, subject, and date
-router.get('/batch/:batch_id/subject/:subject_id/date/:date', async (req, res) => {
   try {
-    const { batch_id, subject_id, date } = req.params;
-
-    // Fetch attendance records for the specific batch, subject, and date
-    const attendanceRecords = await Attendance.findAll({
-      where: {
-        batch_id,
-        subject_id,
-        attendance_date: date,  // Filter by the provided date (in YYYY-MM-DD format)
-      },
-      attributes: ['attendance_id', 'user_id', 'batch_id', 'subject_id', 'status', 'attendance_date', 'teacher_name', 'reason'],  // Only attendance fields
+    const attendanceData = await Attendance.findAll({
+      where: { user_id },
+      attributes: ['user_id', 'batch_id', 'attendance_date', 'status'],
     });
 
-    if (attendanceRecords.length === 0) {
-      return res.status(404).json({ message: 'No attendance records found for this batch, subject, and date' });
+    if (!attendanceData.length) {
+      return res.status(404).json({ message: `No attendance records found for student ${user_id}` });
     }
 
-    res.status(200).json(attendanceRecords);
+    res.status(200).json(attendanceData);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error fetching attendance records' });
+    console.error('Error searching attendance by user ID:', error);
+    res.status(500).json({ message: 'Server error', error });
   }
 });
 
