@@ -1,6 +1,3 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/db'); // Import your sequelize instance
-
 const Attendance = sequelize.define(
   'Attendance',
   {
@@ -39,6 +36,10 @@ const Attendance = sequelize.define(
       validate: {
         isIn: [['Present', 'Absent', 'Late']],
       },
+      set(value) {
+        // Automatically capitalize the first letter of the status value
+        this.setDataValue('status', value.charAt(0).toUpperCase() + value.slice(1).toLowerCase());
+      }
     },
     attendance_date: {
       type: DataTypes.DATEONLY,
