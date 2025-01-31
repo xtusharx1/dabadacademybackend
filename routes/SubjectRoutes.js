@@ -7,7 +7,7 @@ const router = express.Router();
 router.post('/', async (req, res) => {
     try {
         const { subject_name } = req.body;
-        const createdSubject = await SubjectModel.create(subject_name);
+        const createdSubject = await Subject.create(subject_name);
         res.status(201).json(createdSubject); // Send created subject as response
     } catch (error) {
         console.error('Error creating subject:', error);
@@ -18,7 +18,7 @@ router.post('/', async (req, res) => {
 // Read all subjects
 router.get('/', async (req, res) => {
     try {
-        const subjects = await SubjectModel.getAll(); // Fetch all subjects
+        const subjects = await Subject.getAll(); // Fetch all subjects
         res.status(200).json(subjects); // Send subjects as response
     } catch (error) {
         console.error('Error fetching subjects:', error);
@@ -31,7 +31,7 @@ router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const { subject_name } = req.body;
-        const updatedMessage = await SubjectModel.update(id, subject_name);
+        const updatedMessage = await Subject.update(id, subject_name);
         res.status(200).json(updatedMessage); // Send success message as response
     } catch (error) {
         console.error('Error updating subject:', error);
@@ -43,7 +43,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        await SubjectModel.delete(id); // Delete subject
+        await Subject.delete(id); // Delete subject
         res.status(204).send(); // No content response
     } catch (error) {
         console.error('Error deleting subject:', error);
