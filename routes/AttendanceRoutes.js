@@ -3,7 +3,7 @@ const Attendance = require('../models/attendance'); // Import the Attendance mod
 const router = express.Router();
 
 // Route: Fetch all attendance records
-router.get('/attendance', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const attendanceRecords = await Attendance.findAll();
 
@@ -19,7 +19,7 @@ router.get('/attendance', async (req, res) => {
 });
 
 // Route: Fetch attendance by user_id
-router.get('/attendance/user/:user_id', async (req, res) => {
+router.get('/user/:user_id', async (req, res) => {
   const { user_id } = req.params;
 
   if (!user_id || isNaN(user_id)) {
@@ -43,7 +43,7 @@ router.get('/attendance/user/:user_id', async (req, res) => {
 });
 
 // Route: Add attendance record
-router.post('/attendance', async (req, res) => {
+router.post('/', async (req, res) => {
   const { user_id, batch_id, subject_id, status, attendance_date, teacher_name, reason } = req.body;
 
   if (!user_id || !batch_id || !subject_id || !status || !attendance_date) {
@@ -69,7 +69,7 @@ router.post('/attendance', async (req, res) => {
 });
 
 // Route: Update attendance record
-router.put('/attendance/:attendance_id', async (req, res) => {
+router.put('/:attendance_id', async (req, res) => {
   const { attendance_id } = req.params;
   const { status, teacher_name, reason } = req.body;
 
@@ -95,7 +95,7 @@ router.put('/attendance/:attendance_id', async (req, res) => {
 });
 
 // Route: Delete attendance record
-router.delete('/attendance/:attendance_id', async (req, res) => {
+router.delete('/:attendance_id', async (req, res) => {
   const { attendance_id } = req.params;
 
   try {
@@ -110,6 +110,94 @@ router.delete('/attendance/:attendance_id', async (req, res) => {
     res.status(200).json({ message: 'Attendance record deleted successfully' });
   } catch (error) {
     console.error('Error deleting attendance record:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+// Route: Get attendance for a specific batch, subject, and date
+router.get('/batch/:batch_id/subject/:subject_id/date/:attendance_date', async (req, res) => {
+  const { batch_id, subject_id, attendance_date } = req.params;
+
+  if (!batch_id || !subject_id || !attendance_date) {
+    return res.status(400).json({ message: 'Batch ID, Subject ID, and Attendance Date are required' });
+  }
+
+  try {
+    const attendanceRecords = await Attendance.findAll({
+      where: {
+        batch_id,
+        subject_id,
+        attendance_date,
+      },
+    });
+
+    if (!attendanceRecords.length) {
+      return res.status(404).json({ message: 'No attendance records found for the specified batch, subject, and date' });
+    }
+
+    res.status(200).json(attendanceRecords);
+  } catch (error) {
+    console.error('Error fetching attendance for batch, subject, and date:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+// Route: Get batch attendance subject-wise percentage of user
+router.get('/batch/:batch_id/attendance_percentage', async (req, res) => {
+  const { batch_id } = req.params;
+
+  if (!batch_id) {
+    return res.status(400).json({ message: 'Batch ID is required' });
+  }
+
+  try {
+    const attendanceRecords = await Attendance.findAll({
+      where: { batch_id },
+      attributes: [
+        'user_id',
+        'subject_id',
+        [sequelize.fn('COUNT', sequelize.col('attendance_id')), 'attendance_count'],
+        [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = \'Present\' THEN 1 ELSE 0 END')), 'present_count'],
+      ],
+      group: ['user_id', 'subject_id'],
+    });
+
+    const percentageRecords = attendanceRecords.map(record => {
+      const totalAttendance = record.attendance_count;
+      const presentCount = record.present_count;
+      const percentage = (presentCount / totalAttendance) * 100;
+      
+      return {
+        user_id: record.user_id,
+        subject_id: record.subject_id,
+        attendance_percentage: percentage.toFixed(2),
+      };
+    });
+
+    res.status(200).json(percentageRecords);
+  } catch (error) {
+    console.error('Error fetching batch attendance percentage:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+// Route: Get attendance records by user_id
+router.get('/user/:user_id', async (req, res) => {
+  const { user_id } = req.params;
+
+  if (!user_id || isNaN(user_id)) {
+    return res.status(400).json({ message: 'Valid User ID is required' });
+  }
+
+  try {
+    const attendanceRecords = await Attendance.findAll({
+      where: { user_id },
+    });
+
+    if (!attendanceRecords.length) {
+      return res.status(404).json({ message: `No attendance found for user ${user_id}` });
+    }
+
+    res.status(200).json(attendanceRecords);
+  } catch (error) {
+    console.error('Error fetching attendance for user:', error);
     res.status(500).json({ message: 'Server error', error });
   }
 });
