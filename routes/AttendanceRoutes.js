@@ -123,8 +123,7 @@ router.put('/:attendance_id', async (req, res) => {
   }
 });
 // ... existing code ...
-
-// Route: Get attendance percentage for a specific student
+// Route: Get attendance statistics for a specific student
 router.get('/attendance_percentage/:user_id', async (req, res) => {
   const { user_id } = req.params;
 
@@ -140,6 +139,8 @@ router.get('/attendance_percentage/:user_id', async (req, res) => {
         'user_id',
         [sequelize.fn('COUNT', sequelize.col('attendance_id')), 'total_classes'],
         [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = \'Present\' THEN 1 ELSE 0 END')), 'present_count'],
+        [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = \'Absent\' THEN 1 ELSE 0 END')), 'absent_count'],
+        [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = \'Late\' THEN 1 ELSE 0 END')), 'late_count'],
       ],
       group: ['user_id'],
     });
@@ -148,11 +149,15 @@ router.get('/attendance_percentage/:user_id', async (req, res) => {
       return res.status(404).json({ message: `No attendance records found for user ${user_id}` });
     }
 
-    const { total_classes, present_count } = attendanceRecords[0];
+    const { total_classes, present_count, absent_count, late_count } = attendanceRecords[0];
     const attendance_percentage = (present_count / total_classes) * 100;
 
     res.status(200).json({
       user_id,
+      total_classes,
+      present_count,
+      absent_count,
+      late_count,
       attendance_percentage: attendance_percentage.toFixed(2), // Format to two decimal places
     });
   } catch (error) {
