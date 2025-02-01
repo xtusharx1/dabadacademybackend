@@ -214,7 +214,11 @@ router.get('/batch/:batch_id/month/:month', async (req, res) => {
   try {
     // Define start and end date for the given month
     const startDate = `${month}-01`;
-    const endDate = `${month}-31`;
+
+    // Get the last day of the month
+    const [year, monthNum] = month.split('-');
+    const lastDay = new Date(year, monthNum, 0).getDate();
+    const endDate = `${month}-${lastDay}`;
 
     console.log('Fetching attendance with conditions:', { batch_id, startDate, endDate });
 
