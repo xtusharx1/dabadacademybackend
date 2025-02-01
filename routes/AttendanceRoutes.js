@@ -204,8 +204,7 @@ router.get('/batch/:batch_id/subject/:subject_id/month/:month', async (req, res)
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
-
-outer.get('/batch/:batch_id/month/:month', async (req, res) => {
+router.get('/batch/:batch_id/month/:month', async (req, res) => {
   const { batch_id, month } = req.params;
 
   if (!batch_id || !month) {
