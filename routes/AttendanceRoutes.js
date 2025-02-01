@@ -123,7 +123,6 @@ router.put('/:attendance_id', async (req, res) => {
     res.status(500).json({ message: 'Server error', error });
   }
 });
-// ... existing code ...
 // Route: Get attendance statistics for a specific student
 router.get('/attendance_percentage/:user_id', async (req, res) => {
   const { user_id } = req.params;
@@ -151,7 +150,9 @@ router.get('/attendance_percentage/:user_id', async (req, res) => {
     }
 
     const { total_classes, present_count, absent_count, late_count } = attendanceRecords[0];
-    const attendance_percentage = (present_count / total_classes) * 100;
+
+    // Calculate attendance percentage
+    const attendance_percentage = total_classes > 0 ? (present_count / total_classes) * 100 : 0;
 
     res.status(200).json({
       user_id,
@@ -166,6 +167,7 @@ router.get('/attendance_percentage/:user_id', async (req, res) => {
     res.status(500).json({ message: 'Server error', error });
   }
 });
+
 
 // ... existing code ...
 // Route: Delete attendance record
