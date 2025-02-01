@@ -151,6 +151,9 @@ router.get('/attendance_percentage/:user_id', async (req, res) => {
 
     const { total_classes, present_count, absent_count, late_count } = attendanceRecords[0];
 
+    // Log the raw data for debugging
+    console.log('Attendance Data:', { total_classes, present_count, absent_count, late_count });
+
     // Calculate attendance percentage
     const attendance_percentage = total_classes > 0 ? (present_count / total_classes) * 100 : 0;
 
