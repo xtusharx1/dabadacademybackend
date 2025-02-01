@@ -122,7 +122,46 @@ router.put('/:attendance_id', async (req, res) => {
     res.status(500).json({ message: 'Server error', error });
   }
 });
+// ... existing code ...
 
+// Route: Get attendance percentage for a specific student
+router.get('/attendance_percentage/:user_id', async (req, res) => {
+  const { user_id } = req.params;
+
+  if (!user_id) {
+    return res.status(400).json({ message: 'User ID is required' });
+  }
+
+  try {
+    // Fetch attendance records for the student
+    const attendanceRecords = await Attendance.findAll({
+      where: { user_id },
+      attributes: [
+        'user_id',
+        [sequelize.fn('COUNT', sequelize.col('attendance_id')), 'total_classes'],
+        [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = \'Present\' THEN 1 ELSE 0 END')), 'present_count'],
+      ],
+      group: ['user_id'],
+    });
+
+    if (!attendanceRecords.length) {
+      return res.status(404).json({ message: `No attendance records found for user ${user_id}` });
+    }
+
+    const { total_classes, present_count } = attendanceRecords[0];
+    const attendance_percentage = (present_count / total_classes) * 100;
+
+    res.status(200).json({
+      user_id,
+      attendance_percentage: attendance_percentage.toFixed(2), // Format to two decimal places
+    });
+  } catch (error) {
+    console.error('Error fetching attendance percentage:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+
+// ... existing code ...
 // Route: Delete attendance record
 router.delete('/:attendance_id', async (req, res) => {
   const { attendance_id } = req.params;
