@@ -124,7 +124,7 @@ router.put('/:attendance_id', async (req, res) => {
   }
 });
 // Route: Get attendance statistics for a specific student
-// Route: Get attendance records for a specific student
+// Route: Get attendance statistics for a specific student
 router.get('/attendance_percentage/:user_id', async (req, res) => {
   const { user_id } = req.params;
 
@@ -133,25 +133,46 @@ router.get('/attendance_percentage/:user_id', async (req, res) => {
   }
 
   try {
-    // Fetch all attendance records for the student without aggregation
+    // Fetch all attendance records for the student
     const attendanceRecords = await Attendance.findAll({
       where: { user_id },
-      attributes: ['attendance_id', 'status', 'attendance_date'],
+      attributes: ['attendance_id', 'status'],
     });
 
     if (!attendanceRecords.length) {
       return res.status(404).json({ message: `No attendance records found for user ${user_id}` });
     }
 
-    // Log the fetched records for debugging
-    console.log('Attendance Records:', attendanceRecords);
+    // Count the different statuses
+    let present_count = 0;
+    let absent_count = 0;
+    let late_count = 0;
+
+    attendanceRecords.forEach(record => {
+      if (record.status === 'Present') {
+        present_count++;
+      } else if (record.status === 'Absent') {
+        absent_count++;
+      } else if (record.status === 'Late') {
+        late_count++;
+      }
+    });
+
+    const total_classes = attendanceRecords.length;
+
+    // Calculate attendance percentage
+    const attendance_percentage = total_classes > 0 ? (present_count / total_classes) * 100 : 0;
 
     res.status(200).json({
       user_id,
-      attendanceRecords,
+      total_classes,
+      present_count,
+      absent_count,
+      late_count,
+      attendance_percentage: attendance_percentage.toFixed(2), // Format to two decimal places
     });
   } catch (error) {
-    console.error('Error fetching attendance records:', error);
+    console.error('Error fetching attendance percentage:', error);
     res.status(500).json({ message: 'Server error', error });
   }
 });
