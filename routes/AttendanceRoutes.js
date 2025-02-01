@@ -169,6 +169,39 @@ router.get('/batch/:batch_id/subject/:subject_id/date/:attendance_date', async (
     res.status(500).json({ message: 'Server error', error });
   }
 });
+
+
+// Route: Get attendance for a specific batch, subject, and month
+router.get('/batch/:batch_id/subject/:subject_id/month/:month', async (req, res) => {
+  const { batch_id, subject_id, month } = req.params;
+
+  if (!batch_id || !subject_id || !month) {
+    return res.status(400).json({ message: 'Batch ID, Subject ID, and Month are required' });
+  }
+
+  try {
+    const attendanceRecords = await Attendance.findAll({
+      where: {
+        batch_id,
+        subject_id,
+        attendance_date: {
+          [Op.like]: `${month}-%` // This will match all dates in the specified month
+        },
+      },
+    });
+
+    if (!attendanceRecords.length) {
+      return res.status(404).json({ message: 'No attendance records found for the specified batch, subject, and month' });
+    }
+
+    res.status(200).json(attendanceRecords);
+  } catch (error) {
+    console.error('Error fetching attendance for batch, subject, and month:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+
+// ... existing code ...
 // Route: Get batch attendance subject-wise percentage of user
 router.get('/batch/:batch_id/attendance_percentage', async (req, res) => {
   const { batch_id } = req.params;
