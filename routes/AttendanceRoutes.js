@@ -124,6 +124,7 @@ router.put('/:attendance_id', async (req, res) => {
   }
 });
 // Route: Get attendance statistics for a specific student
+// Route: Get attendance records for a specific student
 router.get('/attendance_percentage/:user_id', async (req, res) => {
   const { user_id } = req.params;
 
@@ -132,44 +133,29 @@ router.get('/attendance_percentage/:user_id', async (req, res) => {
   }
 
   try {
-    // Fetch attendance records for the student
+    // Fetch all attendance records for the student without aggregation
     const attendanceRecords = await Attendance.findAll({
       where: { user_id },
-      attributes: [
-        'user_id',
-        [sequelize.fn('COUNT', sequelize.col('attendance_id')), 'total_classes'],
-        [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = \'Present\' THEN 1 ELSE 0 END')), 'present_count'],
-        [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = \'Absent\' THEN 1 ELSE 0 END')), 'absent_count'],
-        [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = \'Late\' THEN 1 ELSE 0 END')), 'late_count'],
-      ],
-      group: ['user_id'],
+      attributes: ['attendance_id', 'status', 'attendance_date'],
     });
 
     if (!attendanceRecords.length) {
       return res.status(404).json({ message: `No attendance records found for user ${user_id}` });
     }
 
-    const { total_classes, present_count, absent_count, late_count } = attendanceRecords[0];
-
-    // Log the raw data for debugging
-    console.log('Attendance Data:', { total_classes, present_count, absent_count, late_count });
-
-    // Calculate attendance percentage
-    const attendance_percentage = total_classes > 0 ? (present_count / total_classes) * 100 : 0;
+    // Log the fetched records for debugging
+    console.log('Attendance Records:', attendanceRecords);
 
     res.status(200).json({
       user_id,
-      total_classes,
-      present_count,
-      absent_count,
-      late_count,
-      attendance_percentage: attendance_percentage.toFixed(2), // Format to two decimal places
+      attendanceRecords,
     });
   } catch (error) {
-    console.error('Error fetching attendance percentage:', error);
+    console.error('Error fetching attendance records:', error);
     res.status(500).json({ message: 'Server error', error });
   }
 });
+
 
 
 // ... existing code ...
