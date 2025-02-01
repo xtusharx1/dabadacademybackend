@@ -170,8 +170,6 @@ router.get('/batch/:batch_id/subject/:subject_id/date/:attendance_date', async (
   }
 });
 
-
-// Route: Get attendance for a specific batch, subject, and month
 router.get('/batch/:batch_id/subject/:subject_id/month/:month', async (req, res) => {
   const { batch_id, subject_id, month } = req.params;
 
@@ -180,12 +178,18 @@ router.get('/batch/:batch_id/subject/:subject_id/month/:month', async (req, res)
   }
 
   try {
+    // Define start and end date for the given month
+    const startDate = `${month}-01`;
+    const endDate = `${month}-31`;
+
+    console.log('Fetching attendance with conditions:', { batch_id, subject_id, startDate, endDate });
+
     const attendanceRecords = await Attendance.findAll({
       where: {
         batch_id,
         subject_id,
         attendance_date: {
-          [Op.like]: `${month}-%` // This will match all dates in the specified month
+          [Op.between]: [startDate, endDate] // Fetch all records in the month
         },
       },
     });
@@ -196,10 +200,11 @@ router.get('/batch/:batch_id/subject/:subject_id/month/:month', async (req, res)
 
     res.status(200).json(attendanceRecords);
   } catch (error) {
-    console.error('Error fetching attendance for batch, subject, and month:', error);
-    res.status(500).json({ message: 'Server error', error });
+    console.error('Error fetching attendance:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
+
 
 // ... existing code ...
 // Route: Get batch attendance subject-wise percentage of user
