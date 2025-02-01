@@ -2,6 +2,7 @@ const express = require('express');
 const Attendance = require('../models/attendance'); // Import the Attendance model
 const router = express.Router();
 const { Op } = require('sequelize');
+const sequelize = require('../config/database');
 // Route: Fetch all attendance records
 router.get('/', async (req, res) => {
   try {
