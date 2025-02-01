@@ -212,9 +212,15 @@ router.get('/batch/:batch_id/month/:month', async (req, res) => {
   }
 
   try {
+    // Parse the month into year and month
+    const [year, monthNum] = month.split('-');
+    
+    // Get the number of days in the given month
+    const daysInMonth = new Date(year, monthNum, 0).getDate();
+    
     // Define start and end date for the given month
     const startDate = `${month}-01`;
-    const endDate = `${month}-31`;
+    const endDate = `${month}-${String(daysInMonth).padStart(2, '0')}`; // Use the correct number of days in the month
 
     console.log('Fetching attendance with conditions:', { batch_id, startDate, endDate });
 
