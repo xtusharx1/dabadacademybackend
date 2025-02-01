@@ -222,7 +222,7 @@ router.get('/batch/:batch_id/month/:month', async (req, res) => {
       where: {
         batch_id,
         attendance_date: {
-          [Op.between]: [startDate, endDate] // Fetch all records in the month
+          [Op.between]: [startDate, endDate], // Fetch all records in the month
         },
       },
     });
