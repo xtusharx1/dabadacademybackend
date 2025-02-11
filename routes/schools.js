@@ -1,16 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const { School } = require('../config/db');
+const School = require('../models/school'); // Check the filename is exactly "school.js"
+
 
 // Get all schools
 router.get('/', async (req, res) => {
     try {
-        const schools = await School.findAll();
-        res.json(schools);
+      const schools = await School.findAll();
+      res.status(200).json({ data: schools });
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching schools', error });
+      res.status(500).json({ message: 'Error fetching schools', error: error.message });
     }
-});
+  });
 
 // Get school by ID
 router.get('/:id', async (req, res) => {
@@ -26,11 +27,15 @@ router.get('/:id', async (req, res) => {
 // Create a new school
 router.post('/', async (req, res) => {
     try {
-        const { school_name, lat, lng } = req.body;
-        const newSchool = await School.create({ school_name, lat, lng });
-        res.json(newSchool);
+        const schools = req.body.schools; // Expecting an array of school objects
+        if (!Array.isArray(schools) || schools.length === 0) {
+            return res.status(400).json({ message: 'Invalid input, expected an array of schools' });
+        }
+
+        const newSchools = await School.bulkCreate(schools);
+        res.json(newSchools);
     } catch (error) {
-        res.status(500).json({ message: 'Error adding school', error });
+        res.status(500).json({ message: 'Error adding schools', error });
     }
 });
 

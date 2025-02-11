@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/db');
+const sequelize = require('../config/db'); // Assuming your DB config is in this file
 
 const Visit = sequelize.define('Visit', {
   visit_id: {
@@ -17,7 +17,7 @@ const Visit = sequelize.define('Visit', {
   },
   personnel_id: {
     type: DataTypes.INTEGER,
-    allowNull: true,  // ON DELETE SET NULL
+    allowNull: true, // ON DELETE SET NULL
     references: {
       model: 'marketing_personnels', // Table name as a string
       key: 'personnel_id',
@@ -37,7 +37,7 @@ const Visit = sequelize.define('Visit', {
   },
 }, {
   tableName: 'visits',
-  timestamps: false,
+  timestamps: false, // Since created_at is handled manually
 });
 
 module.exports = Visit;

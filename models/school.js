@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/db');
+const sequelize = require('../config/db'); // Assuming your DB config is in this file
 
 const School = sequelize.define('School', {
   school_id: {
@@ -8,7 +8,7 @@ const School = sequelize.define('School', {
     primaryKey: true,
   },
   school_name: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(255),
     allowNull: false,
   },
   lat: {
@@ -25,7 +25,7 @@ const School = sequelize.define('School', {
   },
 }, {
   tableName: 'schools',
-  timestamps: false,
+  timestamps: false, // Since created_at is handled manually
 });
 
 module.exports = School;

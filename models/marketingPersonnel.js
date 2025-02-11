@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/db');
+const sequelize = require('../config/db'); // Assuming your DB config is in this file
 
 const MarketingPersonnel = sequelize.define('MarketingPersonnel', {
   personnel_id: {
@@ -8,7 +8,7 @@ const MarketingPersonnel = sequelize.define('MarketingPersonnel', {
     primaryKey: true,
   },
   name: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(255),
     allowNull: false,
   },
   created_at: {
@@ -16,8 +16,8 @@ const MarketingPersonnel = sequelize.define('MarketingPersonnel', {
     defaultValue: DataTypes.NOW,
   },
 }, {
-  tableName: 'marketing_personnel',
-  timestamps: false,
+  tableName: 'marketing_personnels',
+  timestamps: false, // Since created_at is handled manually
 });
 
 module.exports = MarketingPersonnel;
