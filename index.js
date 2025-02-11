@@ -18,6 +18,10 @@ const TestRoutes = require('./routes/tests');
 const StudentTestRecordsRoutes = require('./routes/Studenttestrecords');
 const AttendanceRoutes = require('./routes/AttendanceRoutes');
 const subjectRoutes = require('./routes/SubjectRoutes');
+const WhatsAppRoutes = require('./routes/whatsapproutes');
+const visitsRoutes = require('./routes/visits');
+const schoolRoutes = require('./routes/schools');
+const marketingPersonnel = require('./routes/marketingPersonnel')
 dotenv.config();
 
 const app = express();;
@@ -44,6 +48,10 @@ app.use('/api/test', TestRoutes);
 app.use('/api/studenttestrecords', StudentTestRecordsRoutes);
 app.use('/api/subjects', subjectRoutes);
 app.use('/api/attendance', AttendanceRoutes);
+app.use('/api/whatsapp', WhatsAppRoutes);
+app.use('/api/schools',schoolRoutes);
+app.use('/api/marketing-personnel',marketingPersonnel);
+app.use('/api/visits',visitsRoutes);
 app.get('/', (req, res) => res.send('Welcome to the Dabad Academy API'));
 
 const PORT = 3002;
