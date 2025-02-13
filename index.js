@@ -22,6 +22,8 @@ const WhatsAppRoutes = require('./routes/whatsapproutes');
 const visitsRoutes = require('./routes/visits');
 const schoolRoutes = require('./routes/schools');
 const marketingPersonnel = require('./routes/marketingPersonnel')
+const teacherReportRoutes = require("./routes/teacherReport");
+
 dotenv.config();
 
 const app = express();;
@@ -52,6 +54,7 @@ app.use('/api/whatsapp', WhatsAppRoutes);
 app.use('/api/schools',schoolRoutes);
 app.use('/api/marketing-personnel',marketingPersonnel);
 app.use('/api/visits',visitsRoutes);
+app.use('/api/teacher-report',teacherReportRoutes)
 app.get('/', (req, res) => res.send('Welcome to the Dabad Academy API'));
 
 const PORT = 3002;
