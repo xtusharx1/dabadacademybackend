@@ -16,7 +16,6 @@ router.post("/", async (req, res) => {
 router.get("/", async (req, res) => {
     try {
         const { subject_id, startDate, endDate } = req.query;
-        let where = { is_deleted: false };
 
         if (subject_id) where.subject_id = subject_id;
         if (startDate && endDate) where.date = { [Op.between]: [startDate, endDate] };
@@ -48,7 +47,6 @@ router.get("/batch/:batch_id/subject/:subject_id", async (req, res) => {
             where: {
                 batch_id,
                 subject_id,
-                is_deleted: false,
             },
         });
 
@@ -77,7 +75,6 @@ router.delete("/:id", async (req, res) => {
         const report = await TeacherReport.findByPk(req.params.id);
         if (!report) return res.status(404).json({ message: "Report not found" });
 
-        await report.update({ is_deleted: true });
         res.json({ message: "Report soft deleted" });
     } catch (error) {
         res.status(500).json({ error: error.message });
