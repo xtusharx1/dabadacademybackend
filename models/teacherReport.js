@@ -27,17 +27,13 @@ const TeacherReport = sequelize.define("TeacherReport", {
         type: DataTypes.STRING,
         allowNull: false
     },
-    topic_covered: {
-        type: DataTypes.TEXT,
-        allowNull: false
-    },
     detailed_description: {
         type: DataTypes.TEXT
     },
     homework_assigned: {
         type: DataTypes.TEXT
     },
-    is_deleted: {
+    is_teacher_absent: {  // Renamed from is_deleted
         type: DataTypes.BOOLEAN,
         defaultValue: false
     }
