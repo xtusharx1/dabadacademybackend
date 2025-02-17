@@ -82,4 +82,54 @@ router.delete("/unassign", async (req, res) => {
   }
 });
 
+// ✅ Update a subject-teacher assignment
+router.put("/update/:subject_id/:user_id", async (req, res) => {
+  try {
+    const { subject_id, user_id } = req.params;
+    const { new_subject_id, new_user_id } = req.body;
+
+    // First check if the assignment exists
+    const existingAssignment = await SubjectTeacher.findOne({
+      where: { subject_id, user_id }
+    });
+
+    if (!existingAssignment) {
+      return res.status(404).json({ 
+        error: "Assignment not found for the given subject and teacher." 
+      });
+    }
+
+    // Check if the new assignment already exists
+    if (new_subject_id && new_user_id) {
+      const duplicateCheck = await SubjectTeacher.findOne({
+        where: { 
+          subject_id: new_subject_id, 
+          user_id: new_user_id 
+        }
+      });
+
+      if (duplicateCheck) {
+        return res.status(400).json({ 
+          error: "This teacher is already assigned to the specified subject." 
+        });
+      }
+    }
+
+    // Update the assignment
+    const updatedAssignment = await existingAssignment.update({
+      subject_id: new_subject_id || subject_id,
+      user_id: new_user_id || user_id,
+      assigned_at: new Date() // Update the assignment timestamp
+    });
+
+    res.status(200).json({
+      message: "Assignment updated successfully",
+      assignment: updatedAssignment
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
