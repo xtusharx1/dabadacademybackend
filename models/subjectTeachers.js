@@ -30,8 +30,8 @@ const SubjectTeacher = sequelize.define('SubjectTeacher', {
 }, {
     tableName: 'SubjectTeachers',
     timestamps: false,  // Since we're using assigned_at instead
-    schema: 'public'    // Explicitly set the schema
+    schema: 'public',   // Explicitly set the schema
+    primaryKey: ['subject_id', 'user_id'], // Explicitly define composite primary key
 });
 
 module.exports = SubjectTeacher;
-  
