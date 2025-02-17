@@ -82,10 +82,10 @@ router.delete("/unassign", async (req, res) => {
   }
 });
 
-// ✅ Update a subject-teacher assignment
+// ✅ Update a subject-teacher assignment (only update subject_id)
 router.put('/update/:subject_id/:user_id', async (req, res) => {
     const { subject_id, user_id } = req.params;
-    const { assigned_at } = req.body;  // Fields to update
+    const { new_subject_id } = req.body;  // Only subject_id needs to be updated
 
     try {
         const subjectTeacher = await SubjectTeacher.findOne({
@@ -96,16 +96,26 @@ router.put('/update/:subject_id/:user_id', async (req, res) => {
             return res.status(404).json({ message: 'SubjectTeacher record not found' });
         }
 
-        // Update the fields (you can add more fields here if needed)
-        subjectTeacher.assigned_at = assigned_at || subjectTeacher.assigned_at;  // Update only the fields provided
+        // Update the subject_id if a new subject_id is provided
+        if (new_subject_id) {
+            subjectTeacher.subject_id = new_subject_id;  // Change the subject
+        }
 
         await subjectTeacher.save();  // Save changes
 
-        res.status(200).json({ message: 'SubjectTeacher updated successfully', data: subjectTeacher });
+        // Return the updated subject-teacher record with new subject_id and user_id
+        res.status(200).json({
+            message: 'SubjectTeacher updated successfully',
+            data: {
+                subject_id: subjectTeacher.subject_id,
+                user_id: subjectTeacher.user_id
+            }
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'An error occurred while updating SubjectTeacher', error: error.message });
     }
 });
+
 
 module.exports = router;
