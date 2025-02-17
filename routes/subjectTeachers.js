@@ -83,53 +83,29 @@ router.delete("/unassign", async (req, res) => {
 });
 
 // ✅ Update a subject-teacher assignment
-router.put("/update/:subject_id/:user_id", async (req, res) => {
-  try {
+router.put('/update/:subject_id/:user_id', async (req, res) => {
     const { subject_id, user_id } = req.params;
-    const { new_subject_id, new_user_id } = req.body;
+    const { assigned_at } = req.body;  // Fields to update
 
-    // First check if the assignment exists
-    const existingAssignment = await SubjectTeacher.findOne({
-      where: { subject_id, user_id }
-    });
-
-    if (!existingAssignment) {
-      return res.status(404).json({ 
-        error: "Assignment not found for the given subject and teacher." 
-      });
-    }
-
-    // Check if the new assignment already exists
-    if (new_subject_id && new_user_id) {
-      const duplicateCheck = await SubjectTeacher.findOne({
-        where: { 
-          subject_id: new_subject_id, 
-          user_id: new_user_id 
-        }
-      });
-
-      if (duplicateCheck) {
-        return res.status(400).json({ 
-          error: "This teacher is already assigned to the specified subject." 
+    try {
+        const subjectTeacher = await SubjectTeacher.findOne({
+            where: { subject_id, user_id }
         });
-      }
+
+        if (!subjectTeacher) {
+            return res.status(404).json({ message: 'SubjectTeacher record not found' });
+        }
+
+        // Update the fields (you can add more fields here if needed)
+        subjectTeacher.assigned_at = assigned_at || subjectTeacher.assigned_at;  // Update only the fields provided
+
+        await subjectTeacher.save();  // Save changes
+
+        res.status(200).json({ message: 'SubjectTeacher updated successfully', data: subjectTeacher });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'An error occurred while updating SubjectTeacher', error: error.message });
     }
-
-    // Update the assignment
-    const updatedAssignment = await existingAssignment.update({
-      subject_id: new_subject_id || subject_id,
-      user_id: new_user_id || user_id,
-      assigned_at: new Date() // Update the assignment timestamp
-    });
-
-    res.status(200).json({
-      message: "Assignment updated successfully",
-      assignment: updatedAssignment
-    });
-
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
 });
 
 module.exports = router;
