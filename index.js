@@ -58,6 +58,7 @@ app.use('/api/visits',visitsRoutes);
 app.use('/api/teacher-report',teacherReportRoutes)
 app.use('/api/subject-teachers', subjectTeacherRoutes)
 app.use('/api/teacher-batches', teacherBatch);
+
 app.get('/', (req, res) => res.send('Welcome to the Dabad Academy API'));
 
 const PORT = 3002;
