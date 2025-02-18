@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db'); // Import your sequelize instance
 
-const TeacherBatch = sequelize.define(
+const teacherBatch = sequelize.define(
   'TeacherBatch',
   {
     user_id: {
@@ -37,4 +37,4 @@ const TeacherBatch = sequelize.define(
   }
 );
 
-module.exports = TeacherBatch;
+module.exports = teacherBatch;
