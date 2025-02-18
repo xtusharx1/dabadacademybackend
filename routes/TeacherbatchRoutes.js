@@ -1,12 +1,13 @@
 const express = require('express');
-const TeacherBatch = require('../models/teacherBatch');
+const teacherBatch = require('../models/teacherBatch');
+
 const { Op } = require('sequelize');
 const router = express.Router();
 
 // ✅ Get all teacher-batch assignments
 router.get('/', async (req, res) => {
     try {
-        const assignments = await TeacherBatch.findAll({
+        const assignments = await teacherBatch.findAll({
             attributes: ['user_id', 'batch_id', 'created_at']
         });
 
@@ -26,7 +27,7 @@ router.get('/teacher/:user_id/batches', async (req, res) => {
     const { user_id } = req.params;
 
     try {
-        const teacherBatches = await TeacherBatch.findAll({
+        const teacherBatches = await teacherBatch.findAll({
             where: { user_id },
             attributes: ['batch_id', 'created_at']
         });
@@ -49,7 +50,7 @@ router.get('/batch/:batch_id/teachers', async (req, res) => {
     const { batch_id } = req.params;
 
     try {
-        const batchTeachers = await TeacherBatch.findAll({
+        const batchTeachers = await teacherBatch.findAll({
             where: { batch_id },
             attributes: ['user_id', 'created_at']
         });
@@ -84,7 +85,7 @@ router.post('/teacher/:user_id/batches', async (req, res) => {
             batch_id
         }));
 
-        const result = await TeacherBatch.bulkCreate(assignments, {
+        const result = await teacherBatch.bulkCreate(assignments, {
             ignoreDuplicates: true
         });
 
@@ -115,7 +116,7 @@ router.post('/batch/:batch_id/teachers', async (req, res) => {
             user_id
         }));
 
-        const result = await TeacherBatch.bulkCreate(assignments, {
+        const result = await teacherBatch.bulkCreate(assignments, {
             ignoreDuplicates: true
         });
 
@@ -141,7 +142,7 @@ router.delete('/teacher/:user_id/batches', async (req, res) => {
     }
 
     try {
-        const deleted = await TeacherBatch.destroy({
+        const deleted = await teacherBatch.destroy({
             where: {
                 user_id,
                 batch_id: {
@@ -178,7 +179,7 @@ router.delete('/batch/:batch_id/teachers', async (req, res) => {
     }
 
     try {
-        const deleted = await TeacherBatch.destroy({
+        const deleted = await teacherBatch.destroy({
             where: {
                 batch_id,
                 user_id: {
