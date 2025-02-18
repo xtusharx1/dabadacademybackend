@@ -1,5 +1,5 @@
 const express = require('express');
-const teacherBatch = require('../models/teacherBatch');
+const teacherBatch = require('../models/teacherbatch');
 
 const { Op } = require('sequelize');
 const router = express.Router();
