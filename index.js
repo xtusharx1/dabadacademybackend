@@ -24,6 +24,7 @@ const schoolRoutes = require('./routes/schools');
 const marketingPersonnel = require('./routes/marketingPersonnel')
 const teacherReportRoutes = require("./routes/teacherReport");
 const subjectTeacherRoutes = require("./routes/subjectTeachers");
+const teacherBatch = require("./routes/TeacherbatchRoutes");
 dotenv.config();
 
 const app = express();;
@@ -56,6 +57,7 @@ app.use('/api/marketing-personnel',marketingPersonnel);
 app.use('/api/visits',visitsRoutes);
 app.use('/api/teacher-report',teacherReportRoutes)
 app.use('/api/subject-teachers', subjectTeacherRoutes)
+app.use('/api/teacher-batches', teacherBatch);
 app.get('/', (req, res) => res.send('Welcome to the Dabad Academy API'));
 
 const PORT = 3002;
