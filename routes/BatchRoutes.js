@@ -3,13 +3,24 @@ const Batch = require('../models/batch'); // Ensure correct import
 const router = express.Router();
 
 // Fetch all batches (with support for active/inactive status)
-router.get('/', async (req, res) => {
+router.get('/all', async (req, res) => {
   try {
     const batches = await Batch.findAll();
     res.status(200).json(batches);
   } catch (error) {
     console.error('Error fetching batches:', error);
     res.status(500).json({ message: 'Error fetching batches', error });
+  }
+});
+router.get('/', async (req, res) => {
+  try {
+    const activeBatches = await Batch.findAll({
+      where: { is_active: true }, // Fetch only active batches
+    });
+    res.status(200).json(activeBatches);
+  } catch (error) {
+    console.error('Error fetching active batches:', error);
+    res.status(500).json({ message: 'Error fetching active batches', error });
   }
 });
 
