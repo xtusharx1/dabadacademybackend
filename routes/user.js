@@ -228,7 +228,7 @@ router.get('/role/:role_id', async (req, res) => {
       where: { role_id },
       attributes: ['user_id', 'name', 'email', 'phone_number', 'status', 'created_at', 'date_of_admission'], // Include created_at
       order: [
-        ['status', 'DESC'],  // 🏆 Active ("active") first, inactive ("inactive") below
+        ['status', 'ASC'],  // 🏆 Active ("active") first, inactive ("inactive") below
         ['created_at', 'DESC'] // 📅 Sort by created_at (latest first) within each status
       ],
     });
