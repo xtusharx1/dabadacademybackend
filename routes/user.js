@@ -240,6 +240,27 @@ router.get('/role/:role_id', async (req, res) => {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
+// Get active users by role_id
+router.get('/active/role/:role_id', async (req, res) => {
+  const { role_id } = req.params;
+
+  try {
+    const activeUsers = await User.findAll({
+      where: { role_id, status: "active" },
+      attributes: ['user_id', 'name', 'email', 'phone_number', 'status', 'created_at', 'date_of_admission'],
+      order: [['created_at', 'DESC']], // Sort by created_at in descending order
+    });
+
+    if (activeUsers.length === 0) {
+      return res.status(404).json({ message: `No active users found for role_id ${role_id}` });
+    }
+
+    res.status(200).json(activeUsers);
+  } catch (error) {
+    console.error('Error fetching active users by role:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
 
 // Get admission date and total course fee by user_id
 router.get('/admissions/:user_id', async (req, res) => {
