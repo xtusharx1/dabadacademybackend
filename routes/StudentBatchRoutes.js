@@ -19,6 +19,34 @@ router.get('/students', async (req, res) => {
     res.status(500).json({ message: 'Server error', error });
   }
 });
+// Route: Update a student's batch
+router.put('update', async (req, res) => {
+  const { user_id, old_batch_id, new_batch_id } = req.body;
+
+  if (!user_id || !old_batch_id || !new_batch_id || isNaN(user_id) || isNaN(old_batch_id) || isNaN(new_batch_id)) {
+    return res.status(400).json({ message: 'User ID, Old Batch ID, and New Batch ID are required and must be valid numbers' });
+  }
+
+  try {
+    // Find the student in the old batch
+    const student = await StudentBatch.findOne({
+      where: { user_id, batch_id: old_batch_id },
+    });
+
+    if (!student) {
+      return res.status(404).json({ message: `No record found for user ${user_id} in batch ${old_batch_id}` });
+    }
+
+    // Update batch_id to new_batch_id
+    student.batch_id = new_batch_id;
+    await student.save();
+
+    res.status(200).json({ message: 'Student batch updated successfully', student });
+  } catch (error) {
+    console.error('Error updating student batch:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
 
 // Route: Fetch all students in a specific batch
 router.get('/students/batch/:batch_id', async (req, res) => {
