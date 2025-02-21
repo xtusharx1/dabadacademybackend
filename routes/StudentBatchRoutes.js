@@ -37,11 +37,18 @@ router.put('/update', async (req, res) => {
       return res.status(404).json({ message: `No record found for user ${user_id} in batch ${old_batch_id}` });
     }
 
-    // Update batch_id to new_batch_id
-    student.batch_id = new_batch_id;
-    await student.save();
+    // Update batch_id to new_batch_id using update()
+    await StudentBatch.update(
+      { batch_id: new_batch_id },
+      { where: { user_id, batch_id: old_batch_id } }
+    );
 
-    res.status(200).json({ message: 'Student batch updated successfully', student });
+    // Fetch updated record
+    const updatedStudent = await StudentBatch.findOne({
+      where: { user_id, batch_id: new_batch_id },
+    });
+
+    res.status(200).json({ message: 'Student batch updated successfully', student: updatedStudent });
   } catch (error) {
     console.error('Error updating student batch:', error);
     res.status(500).json({ message: 'Server error', error });
