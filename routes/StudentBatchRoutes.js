@@ -20,7 +20,7 @@ router.get('/students', async (req, res) => {
   }
 });
 // Route: Update a student's batch
-router.put('update', async (req, res) => {
+router.put('/update', async (req, res) => {
   const { user_id, old_batch_id, new_batch_id } = req.body;
 
   if (!user_id || !old_batch_id || !new_batch_id || isNaN(user_id) || isNaN(old_batch_id) || isNaN(new_batch_id)) {
