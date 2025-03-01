@@ -15,17 +15,13 @@ router.post("/", async (req, res) => {
 // ✅ Get all reports (with filters)
 router.get("/", async (req, res) => {
     try {
-        const { subject_id, startDate, endDate } = req.query;
-
-        if (subject_id) where.subject_id = subject_id;
-        if (startDate && endDate) where.date = { [Op.between]: [startDate, endDate] };
-
-        const reports = await TeacherReport.findAll({ where });
+        const reports = await TeacherReport.findAll(); // Fetch all reports
         res.status(200).json(reports);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
+
 
 // ✅ Get a single report by ID
 router.get("/:id", async (req, res) => {
