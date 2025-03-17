@@ -25,7 +25,7 @@ const marketingPersonnel = require('./routes/marketingPersonnel')
 const teacherReportRoutes = require("./routes/teacherReport");
 const subjectTeacherRoutes = require("./routes/subjectTeachers");
 const teacherBatch = require("./routes/TeacherbatchRoutes");
-const studentCounselorRoutes = require('./routes/studentCounselorRoutes');
+const studentCounselorRoutes = require('./routes/studentCounselor');
 dotenv.config();
 
 const app = express();;
