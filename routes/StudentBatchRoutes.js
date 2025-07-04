@@ -1,17 +1,28 @@
 const express = require('express');
 const StudentBatch = require('../models/studentbatch'); // Import the StudentBatch model
+const User = require('../models/user'); // Import the User model for joins
 const router = express.Router();
 
 const { Op, fn, col } = require('sequelize');
-// Route: Fetch all students across all batches
+
+// First, establish the association between StudentBatch and User
+StudentBatch.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// Route: Fetch all students across all batches (only active users)
 router.get('/students', async (req, res) => {
   try {
     const studentsData = await StudentBatch.findAll({
       attributes: ['user_id', 'batch_id'],
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: [],
+        where: { status: 'active' }
+      }]
     });
 
     if (!studentsData.length) {
-      return res.status(404).json({ message: 'No students found' });
+      return res.status(404).json({ message: 'No active students found' });
     }
 
     res.status(200).json(studentsData);
@@ -20,6 +31,8 @@ router.get('/students', async (req, res) => {
     res.status(500).json({ message: 'Server error', error });
   }
 });
+
+// Route: Get student counts by date for a specific batch (only active users)
 router.get('/student-counts/:batch_id', async (req, res) => {
   const { batch_id } = req.params;
 
@@ -27,11 +40,17 @@ router.get('/student-counts/:batch_id', async (req, res) => {
     const results = await StudentBatch.findAll({
       where: { batch_id },
       attributes: [
-        [fn('DATE', col('created_at')), 'date'],
+        [fn('DATE', col('StudentBatch.created_at')), 'date'],
         [fn('COUNT', '*'), 'student_count']
       ],
-      group: [fn('DATE', col('created_at'))],
-      order: [[fn('DATE', col('created_at')), 'ASC']],
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: [],
+        where: { status: 'active' }
+      }],
+      group: [fn('DATE', col('StudentBatch.created_at'))],
+      order: [[fn('DATE', col('StudentBatch.created_at')), 'ASC']],
     });
 
     res.status(200).json(results);
@@ -41,7 +60,7 @@ router.get('/student-counts/:batch_id', async (req, res) => {
   }
 });
 
-// Route: Update a student's batch
+// Route: Update a student's batch (only if user is active)
 router.put('/update', async (req, res) => {
   const { user_id, old_batch_id, new_batch_id } = req.body;
 
@@ -50,6 +69,15 @@ router.put('/update', async (req, res) => {
   }
 
   try {
+    // First check if user is active
+    const user = await User.findOne({
+      where: { user_id, status: 'active' }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: `Active user with id ${user_id} not found` });
+    }
+
     // Find the student in the old batch
     const student = await StudentBatch.findOne({
       where: { user_id, batch_id: old_batch_id },
@@ -77,7 +105,7 @@ router.put('/update', async (req, res) => {
   }
 });
 
-// Route: Fetch all students in a specific batch
+// Route: Fetch all students in a specific batch (only active users)
 router.get('/students/batch/:batch_id', async (req, res) => {
   const { batch_id } = req.params;
 
@@ -89,10 +117,16 @@ router.get('/students/batch/:batch_id', async (req, res) => {
     const studentsData = await StudentBatch.findAll({
       where: { batch_id },
       attributes: ['user_id', 'batch_id'],
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['name', 'email', 'phone_number', 'status'], // Include user details
+        where: { status: 'active' }
+      }]
     });
 
     if (!studentsData.length) {
-      return res.status(404).json({ message: `No students found in batch ${batch_id}` });
+      return res.status(404).json({ message: `No active students found in batch ${batch_id}` });
     }
 
     res.status(200).json(studentsData);
@@ -102,7 +136,7 @@ router.get('/students/batch/:batch_id', async (req, res) => {
   }
 });
 
-// Route: Add a student to a specific batch
+// Route: Add a student to a specific batch (only if user is active)
 router.post('/students/batch', async (req, res) => {
   const { batch_id, user_id } = req.body;
 
@@ -111,6 +145,15 @@ router.post('/students/batch', async (req, res) => {
   }
 
   try {
+    // First check if user exists and is active
+    const user = await User.findOne({
+      where: { user_id, status: 'active' }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: `Active user with id ${user_id} not found` });
+    }
+
     const newStudent = await StudentBatch.create({ user_id, batch_id });
     res.status(201).json({ message: 'Student added successfully', student: newStudent });
   } catch (error) {
@@ -119,11 +162,17 @@ router.post('/students/batch', async (req, res) => {
   }
 });
 
-// Route: Get the count of all batches
+// Route: Get the count of all batches (only count active users)
 router.get('/batches/count', async (req, res) => {
   try {
     const batchCounts = await StudentBatch.findAll({
       attributes: ['batch_id'],
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: [],
+        where: { status: 'active' }
+      }],
       group: ['batch_id'],
     });
 
@@ -134,7 +183,7 @@ router.get('/batches/count', async (req, res) => {
   }
 });
 
-// Route: Get the count of students in a specific batch
+// Route: Get the count of students in a specific batch (only active users)
 router.get('/batches/:batch_id/count', async (req, res) => {
   const { batch_id } = req.params;
 
@@ -143,7 +192,15 @@ router.get('/batches/:batch_id/count', async (req, res) => {
   }
 
   try {
-    const studentCount = await StudentBatch.count({ where: { batch_id } });
+    const studentCount = await StudentBatch.count({ 
+      where: { batch_id },
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: [],
+        where: { status: 'active' }
+      }]
+    });
     res.status(200).json({ batch_id, studentCount });
   } catch (error) {
     console.error('Error fetching student count for batch:', error);
@@ -174,7 +231,8 @@ router.delete('/students/batch', async (req, res) => {
     res.status(500).json({ message: 'Server error', error });
   }
 });
-// Route: Search for a student by user_id
+
+// Route: Search for a student by user_id (only if user is active)
 router.get('/students/search/:user_id', async (req, res) => {
   const { user_id } = req.params;
 
@@ -186,10 +244,16 @@ router.get('/students/search/:user_id', async (req, res) => {
     const studentData = await StudentBatch.findAll({
       where: { user_id },
       attributes: ['user_id', 'batch_id'],
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['name', 'email', 'phone_number', 'status'],
+        where: { status: 'active' }
+      }]
     });
 
     if (!studentData.length) {
-      return res.status(404).json({ message: `No student found with User ID ${user_id}` });
+      return res.status(404).json({ message: `No active student found with User ID ${user_id}` });
     }
 
     res.status(200).json(studentData);
