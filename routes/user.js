@@ -9,13 +9,15 @@ const router = express.Router();
 
 router.post('/register', async (req, res) => {
   try {
-    const {
+    let {
       name, email, password, role_id, phone_number, date_of_admission,
       present_class, date_of_birth, total_course_fees, father_name,
       mother_name, full_address, child_aadhar_number, mother_aadhar_number,
       father_aadhar_number, permanent_education_number, student_registration_number,
       previous_school_info, gender, state, status = 'active'
     } = req.body;
+
+    if (email) email = email.trim().toLowerCase();
 
     // Manual validation for required fields
     if (!name || !email || !password || !role_id) {
@@ -191,8 +193,12 @@ router.put('/user/:user_id', async (req, res) => {
       gender,
       state,
       status = existingData.status,
+      password,
       password_hash,
     } = req.body;
+
+    let normalizedEmail = email;
+    if (normalizedEmail) normalizedEmail = normalizedEmail.trim().toLowerCase();
 
     // Skip basic validation for required fields when updating
     // since we're using existing values as defaults
@@ -202,7 +208,7 @@ router.put('/user/:user_id', async (req, res) => {
     
     // Process each field only if it exists in the request body
     if (req.body.hasOwnProperty('name')) updatedFields.name = name;
-    if (req.body.hasOwnProperty('email')) updatedFields.email = email;
+    if (req.body.hasOwnProperty('email')) updatedFields.email = normalizedEmail;
     if (req.body.hasOwnProperty('role_id')) updatedFields.role_id = role_id;
     if (req.body.hasOwnProperty('phone_number')) updatedFields.phone_number = phone_number;
     if (req.body.hasOwnProperty('date_of_admission')) updatedFields.date_of_admission = date_of_admission;
@@ -226,12 +232,18 @@ router.put('/user/:user_id', async (req, res) => {
     if (req.body.hasOwnProperty('state')) updatedFields.state = state;
     if (req.body.hasOwnProperty('status')) updatedFields.status = status;
 
-    // If password_hash is provided, hash it and include it in the update
-    if (password_hash) {
+    // Determine the password to use (prioritize 'password' but fallback to 'password_hash' for legacy admin panels)
+    const passwordInput = password || password_hash;
+
+    if (passwordInput) {
+      // Prevent double hashing if the input is already a bcrypt hash
+      if (passwordInput.startsWith('$2a$') || passwordInput.startsWith('$2b$')) {
+        return res.status(400).json({ message: 'Directly storing hashes or double-hashing is not allowed. Please provide a plain-text password.' });
+      }
       try {
         console.log("Password provided, hashing...");
         const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(password_hash, saltRounds);
+        const hashedPassword = await bcrypt.hash(passwordInput, saltRounds);
         updatedFields.password_hash = hashedPassword;
       } catch (hashError) {
         console.error('Error hashing password:', hashError);
@@ -528,12 +540,14 @@ router.get('/roles/count', async (req, res) => {
 });
 
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+  let { email, password } = req.body;
 
   // Validate input
   if (!email || !password) {
     return res.status(400).json({ message: 'Please provide both email and password' });
   }
+
+  email = email.trim().toLowerCase();
 
   try {
     // Find user by email
@@ -550,8 +564,26 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Compare password
-    const isMatch = await bcrypt.compare(password, user.password_hash);
+    // Compare password with fallback for legacy plain-text passwords
+    let isMatch = false;
+
+    if (user.password_hash && (user.password_hash.startsWith('$2a$') || user.password_hash.startsWith('$2b$'))) {
+      // Valid bcrypt hash format
+      isMatch = await bcrypt.compare(password, user.password_hash);
+    } else {
+      // Legacy unhashed plain-text password detected in DB
+      if (user.password_hash === password) {
+        isMatch = true;
+        // Auto-upgrade to bcrypt hash
+        try {
+          const newHash = await bcrypt.hash(password, 10);
+          await user.update({ password_hash: newHash });
+          console.log(`Auto-upgraded plain-text password to bcrypt hash for user ${user.email}`);
+        } catch (upgradeErr) {
+          console.error("Failed to auto-upgrade password for user", user.email, upgradeErr);
+        }
+      }
+    }
 
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
