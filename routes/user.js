@@ -50,8 +50,13 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Check if user already exists
-    const userExists = await User.findOne({ where: { email } });
+    // Check if user already exists (case-insensitive to support legacy mixed-case)
+    const userExists = await User.findOne({ 
+      where: sequelize.where(
+        sequelize.fn('LOWER', sequelize.col('email')),
+        email
+      )
+    });
     if (userExists) {
       return res.status(400).json({ 
         success: false,
@@ -550,8 +555,13 @@ router.post('/login', async (req, res) => {
   email = email.trim().toLowerCase();
 
   try {
-    // Find user by email
-    const user = await User.findOne({ where: { email } });
+    // Find user by email (case-insensitive to support mixed-case legacy records)
+    const user = await User.findOne({ 
+      where: sequelize.where(
+        sequelize.fn('LOWER', sequelize.col('email')),
+        email
+      )
+    });
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
