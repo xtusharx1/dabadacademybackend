@@ -1,5 +1,7 @@
 .env
-package.json
 package-lock.json
-
+node_modules/
 config/defence-boarding-schools-firebase-adminsdk-dxkqq-0aa87f8454.json
+test.js
+test_flow.js
+check_db.js
