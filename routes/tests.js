@@ -34,6 +34,7 @@ router.get('/tests/batch/:batch_id', async (req, res) => {
       const tests = await Test.findAll({
         where: { batch_id },
         attributes: ['test_id', 'test_name', 'subject', 'date', 'total_marks'], // Fetch relevant fields
+        order: [['date', 'DESC']],
       });
   
       if (!tests.length) {
