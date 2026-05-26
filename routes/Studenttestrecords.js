@@ -1,7 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const StudentTestRecords = require('../models/StudentTestRecords');
+const Test = require('../models/test');
 const { Sequelize, Op } = require('sequelize'); // Import Sequelize and Op for operators
+
+// Establish model association for sorting test records by test date
+StudentTestRecords.belongsTo(Test, { foreignKey: 'test_id' });
 
 // Create a new student test record
 router.post('/', async (req, res) => {
@@ -17,7 +21,13 @@ router.post('/', async (req, res) => {
 // Get all student test records
 router.get('/', async (req, res) => {
     try {
-        const records = await StudentTestRecords.findAll();
+        const records = await StudentTestRecords.findAll({
+            include: [{
+                model: Test,
+                attributes: []
+            }],
+            order: [[Test, 'date', 'DESC']]
+        });
         res.json(records);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -108,6 +118,11 @@ router.get('/user/:user_id', async (req, res) => {
         // Fetch student test records based on user_id
         const records = await StudentTestRecords.findAll({
             where: { user_id: user_id },
+            include: [{
+                model: Test,
+                attributes: []
+            }],
+            order: [[Test, 'date', 'DESC']],
             attributes: ['record_id', 'test_id', 'user_id', 'marks_obtained', 'created_at', 'updated_at'] // Include timestamps
         });
 

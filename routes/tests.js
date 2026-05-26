@@ -16,7 +16,9 @@ router.post('/', async (req, res) => {
 // Get all tests
 router.get('/', async (req, res) => {
     try {
-        const tests = await Test.findAll();
+        const tests = await Test.findAll({
+            order: [['date', 'DESC']]
+        });
         res.json(tests);
     } catch (error) {
         res.status(500).json({ error: error.message });
