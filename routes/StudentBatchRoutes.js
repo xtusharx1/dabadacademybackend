@@ -86,38 +86,13 @@ router.put('/update', async (req, res) => {
       return res.status(404).json({ message: `Active user with id ${user_id} not found` });
     }
 
-    const hasOldBatch = old_batch_id !== null && old_batch_id !== undefined && !isNaN(old_batch_id);
-
-    if (hasOldBatch) {
-      // Find the student in the old batch
-      const student = await StudentBatch.findOne({
-        where: { user_id, batch_id: old_batch_id },
-        transaction: t
-      });
-
-      if (student) {
-        // Update batch_id to new_batch_id using update()
-        await StudentBatch.update(
-          { batch_id: new_batch_id },
-          { 
-            where: { user_id, batch_id: old_batch_id },
-            transaction: t 
-          }
-        );
-      } else {
-        // Fallback: If not found in the specified old batch, assign to the new batch using findOrCreate
-        await StudentBatch.findOrCreate({
-          where: { user_id, batch_id: new_batch_id },
-          transaction: t
-        });
-      }
-    } else {
-      // If student had no batch assigned previously, assign to the new batch
-      await StudentBatch.findOrCreate({
-        where: { user_id, batch_id: new_batch_id },
-        transaction: t
-      });
-    }
+    // To preserve historical batch records and ensure they still appear in previous batch lists,
+    // we DO NOT overwrite or update the old batch record. Instead, we keep the student associated
+    // with the old batch and create a new batch record.
+    await StudentBatch.findOrCreate({
+      where: { user_id, batch_id: new_batch_id },
+      transaction: t
+    });
 
     // Auto-create a zero-initialized FeeStatus ledger for the new batch (Option A promotion workflow)
     const today = new Date().toISOString().split('T')[0];

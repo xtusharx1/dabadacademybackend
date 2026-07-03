@@ -26,7 +26,8 @@ router.get('/user/:user_id', async (req, res) => {
     if (!targetBatchId) {
       const StudentBatch = require('../models/studentbatch');
       const activeBatchRecord = await StudentBatch.findOne({
-        where: { user_id }
+        where: { user_id },
+        order: [['created_at', 'DESC']]
       });
       if (activeBatchRecord) {
         targetBatchId = activeBatchRecord.batch_id;
