@@ -13,13 +13,33 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get fee statuses by user_id
+// Get fee statuses by user_id (supports optional batch_id filtering)
 router.get('/user/:user_id', async (req, res) => {
   const { user_id } = req.params;
+  const { batch_id } = req.query;
 
   try {
+    let targetBatchId = batch_id;
+
+    // If batch_id is not provided (e.g. from the mobile app),
+    // fetch the student's current active batch from StudentBatch table
+    if (!targetBatchId) {
+      const StudentBatch = require('../models/studentbatch');
+      const activeBatchRecord = await StudentBatch.findOne({
+        where: { user_id }
+      });
+      if (activeBatchRecord) {
+        targetBatchId = activeBatchRecord.batch_id;
+      }
+    }
+
+    const whereClause = { user_id };
+    if (targetBatchId) {
+      whereClause.batch_id = targetBatchId;
+    }
+
     const feeStatuses = await FeeStatus.findAll({
-      where: { user_id },
+      where: whereClause,
       attributes: [
         'id',
         'admissionDate',
@@ -28,6 +48,7 @@ router.get('/user/:user_id', async (req, res) => {
         'remainingFees',
         'nextDueDate',
         'user_id',
+        'batch_id',
         'paymentCompleted',
       ],
     });
@@ -47,13 +68,25 @@ router.get('/user/:user_id', async (req, res) => {
 router.get('/summary', async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    const Batch = require('../models/batch');
 
-    const totalStudents = await FeeStatus.count();
+    // Fetch all active batch IDs
+    const activeBatches = await Batch.findAll({
+      where: { is_active: true },
+      attributes: ['batch_id'],
+    });
+    const activeBatchIds = activeBatches.map(b => b.batch_id);
+    const whereClause = activeBatchIds.length > 0 ? { batch_id: { [Op.in]: activeBatchIds } } : { batch_id: null };
+
+    const totalStudents = await FeeStatus.count({
+      where: whereClause,
+    });
 
     const totalDueFee = await FeeStatus.findOne({
       attributes: [
         [Sequelize.literal('SUM(CAST("remainingFees" AS NUMERIC))'), 'totalDueFee'],
       ],
+      where: whereClause,
     });
 
     const totalDueToday = await FeeStatus.findOne({
@@ -62,6 +95,7 @@ router.get('/summary', async (req, res) => {
       ],
       where: {
         nextDueDate: today,
+        ...whereClause,
       },
     });
 
@@ -78,7 +112,18 @@ router.get('/summary', async (req, res) => {
 // Fetch upcoming dues, including payment status
 router.get('/upcoming-dues', async (req, res) => {
   try {
+    const Batch = require('../models/batch');
+
+    // Fetch all active batch IDs
+    const activeBatches = await Batch.findAll({
+      where: { is_active: true },
+      attributes: ['batch_id'],
+    });
+    const activeBatchIds = activeBatches.map(b => b.batch_id);
+    const whereClause = activeBatchIds.length > 0 ? { batch_id: { [Op.in]: activeBatchIds } } : { batch_id: null };
+
     const allDues = await FeeStatus.findAll({
+      where: whereClause,
       attributes: [
         'id',
         'admissionDate',
@@ -87,6 +132,7 @@ router.get('/upcoming-dues', async (req, res) => {
         'remainingFees',
         'nextDueDate',
         'user_id',
+        'batch_id',
         'paymentCompleted',
       ],
     });

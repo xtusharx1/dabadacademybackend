@@ -31,6 +31,15 @@ const FeeStatus = sequelize.define('FeeStatus', {
     },
     onDelete: 'CASCADE', // Deletes FeeStatus entries if the referenced User is deleted
   },
+  batch_id: { // Foreign key column for Batch
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Batches', // Refers to the 'Batches' table
+      key: 'batch_id',
+    },
+    onDelete: 'SET NULL',
+  },
   paymentCompleted: { // New column to track payment completion status
     type: DataTypes.BOOLEAN,
     defaultValue: false, // Default value is false, indicating payment is not completed

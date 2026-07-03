@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const OtherChargesRecord = require('../models/OtherChargesRecord');
 const FeeStatus = require('../models/FeeStatus');
+const sequelize = require('../config/db');
 
 // Get all other charge records
 router.get('/', async (req, res) => {
@@ -65,6 +66,7 @@ router.get('/charges/:feeStatusId', async (req, res) => {
 });
 // Add other charges
 router.post('/', async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const { title, date, amount, description, feeStatusId } = req.body;
 
@@ -75,12 +77,16 @@ router.post('/', async (req, res) => {
       amount, 
       description, 
       feeStatusId 
+    }, { transaction: t });
+
+    // Update FeeStatus with row lock SELECT ... FOR UPDATE
+    const feeStatus = await FeeStatus.findByPk(feeStatusId, {
+      transaction: t,
+      lock: t.LOCK.UPDATE
     });
 
-    // Update FeeStatus
-    const feeStatus = await FeeStatus.findByPk(feeStatusId);
-
     if (!feeStatus) {
+      await t.rollback();
       return res.status(404).json({ error: 'FeeStatus not found' });
     }
 
@@ -95,7 +101,9 @@ router.post('/', async (req, res) => {
       remainingFees: updatedRemainingFees.toFixed(2),
       paymentCompleted: paymentCompleted,
       nextDueDate: paymentCompleted ? null : feeStatus.nextDueDate
-    });
+    }, { transaction: t });
+
+    await t.commit();
 
     res.status(201).json({ 
       message: 'Other charges added successfully', 
@@ -103,6 +111,7 @@ router.post('/', async (req, res) => {
       feeStatus: await FeeStatus.findByPk(feeStatusId)
     });
   } catch (error) {
+    await t.rollback();
     console.error('Error adding charge:', error);
     res.status(500).json({ error: error.message });
   }
@@ -110,14 +119,16 @@ router.post('/', async (req, res) => {
 
 // Edit other charges
 router.put('/:id', async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const { id } = req.params;
     const { title, date, amount, description, feeStatusId } = req.body;
     
     // Find the existing charge record
-    const chargeRecord = await OtherChargesRecord.findByPk(id);
+    const chargeRecord = await OtherChargesRecord.findByPk(id, { transaction: t });
     
     if (!chargeRecord) {
+      await t.rollback();
       return res.status(404).json({ error: 'Charge record not found' });
     }
     
@@ -133,11 +144,14 @@ router.put('/:id', async (req, res) => {
       amount,
       description,
       feeStatusId
-    });
+    }, { transaction: t });
     
     // Update the related FeeStatus record if amount changed
     if (amountDifference !== 0) {
-      const feeStatus = await FeeStatus.findByPk(feeStatusId);
+      const feeStatus = await FeeStatus.findByPk(feeStatusId, {
+        transaction: t,
+        lock: t.LOCK.UPDATE
+      });
       
       if (feeStatus) {
         // Recalculate fees
@@ -152,9 +166,14 @@ router.put('/:id', async (req, res) => {
           remainingFees: updatedRemainingFees.toFixed(2),
           paymentCompleted: paymentCompleted,
           nextDueDate: paymentCompleted ? null : feeStatus.nextDueDate
-        });
+        }, { transaction: t });
+      } else {
+        await t.rollback();
+        return res.status(404).json({ error: 'FeeStatus not found' });
       }
     }
+    
+    await t.commit();
     
     res.status(200).json({ 
       message: 'Charge record updated successfully', 
@@ -162,6 +181,7 @@ router.put('/:id', async (req, res) => {
       feeStatus: await FeeStatus.findByPk(feeStatusId)
     });
   } catch (error) {
+    await t.rollback();
     console.error('Error updating charge record:', error);
     res.status(500).json({ error: error.message });
   }
@@ -169,13 +189,15 @@ router.put('/:id', async (req, res) => {
 
 // Delete other charges
 router.delete('/:id', async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const { id } = req.params;
     
     // Find the charge record
-    const chargeRecord = await OtherChargesRecord.findByPk(id);
+    const chargeRecord = await OtherChargesRecord.findByPk(id, { transaction: t });
     
     if (!chargeRecord) {
+      await t.rollback();
       return res.status(404).json({ error: 'Charge record not found' });
     }
     
@@ -183,10 +205,13 @@ router.delete('/:id', async (req, res) => {
     const feeStatusId = chargeRecord.feeStatusId;
     
     // Delete the charge record
-    await chargeRecord.destroy();
+    await chargeRecord.destroy({ transaction: t });
     
     // Update the FeeStatus
-    const feeStatus = await FeeStatus.findByPk(feeStatusId);
+    const feeStatus = await FeeStatus.findByPk(feeStatusId, {
+      transaction: t,
+      lock: t.LOCK.UPDATE
+    });
     
     if (feeStatus) {
       // Recalculate fees
@@ -201,14 +226,20 @@ router.delete('/:id', async (req, res) => {
         remainingFees: updatedRemainingFees.toFixed(2),
         paymentCompleted: paymentCompleted,
         nextDueDate: paymentCompleted ? null : feeStatus.nextDueDate
-      });
+      }, { transaction: t });
+    } else {
+      await t.rollback();
+      return res.status(404).json({ error: 'FeeStatus not found' });
     }
+    
+    await t.commit();
     
     res.status(200).json({ 
       message: 'Charge record deleted successfully',
       feeStatus: await FeeStatus.findByPk(feeStatusId)
     });
   } catch (error) {
+    await t.rollback();
     console.error('Error deleting charge record:', error);
     res.status(500).json({ error: error.message });
   }

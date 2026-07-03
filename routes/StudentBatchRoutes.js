@@ -68,40 +68,71 @@ router.put('/update', async (req, res) => {
     return res.status(400).json({ message: 'User ID, Old Batch ID, and New Batch ID are required and must be valid numbers' });
   }
 
+  const sequelize = require('../config/db');
+  const FeeStatus = require('../models/FeeStatus');
+  const t = await sequelize.transaction();
+
   try {
     // First check if user is active
     const user = await User.findOne({
-      where: { user_id, status: 'active' }
+      where: { user_id, status: 'active' },
+      transaction: t
     });
 
     if (!user) {
+      await t.rollback();
       return res.status(404).json({ message: `Active user with id ${user_id} not found` });
     }
 
     // Find the student in the old batch
     const student = await StudentBatch.findOne({
       where: { user_id, batch_id: old_batch_id },
+      transaction: t
     });
 
     if (!student) {
+      await t.rollback();
       return res.status(404).json({ message: `No record found for user ${user_id} in batch ${old_batch_id}` });
     }
 
     // Update batch_id to new_batch_id using update()
     await StudentBatch.update(
       { batch_id: new_batch_id },
-      { where: { user_id, batch_id: old_batch_id } }
+      { 
+        where: { user_id, batch_id: old_batch_id },
+        transaction: t 
+      }
     );
+
+    // Auto-create a zero-initialized FeeStatus ledger for the new batch (Option A promotion workflow)
+    const today = new Date().toISOString().split('T')[0];
+    await FeeStatus.findOrCreate({
+      where: { user_id, batch_id: new_batch_id },
+      defaults: {
+        admissionDate: today,
+        totalFees: "0",
+        feesSubmitted: "0",
+        remainingFees: "0",
+        nextDueDate: null,
+        user_id: user_id,
+        batch_id: new_batch_id,
+        paymentCompleted: false
+      },
+      transaction: t
+    });
 
     // Fetch updated record
     const updatedStudent = await StudentBatch.findOne({
       where: { user_id, batch_id: new_batch_id },
+      transaction: t
     });
 
+    await t.commit();
     res.status(200).json({ message: 'Student batch updated successfully', student: updatedStudent });
   } catch (error) {
+    await t.rollback();
     console.error('Error updating student batch:', error);
-    res.status(500).json({ message: 'Server error', error });
+    res.status(500).json({ message: 'Server error', error: error.message || error });
   }
 });
 
@@ -144,21 +175,50 @@ router.post('/students/batch', async (req, res) => {
     return res.status(400).json({ message: 'Batch ID and User ID are required and must be valid numbers' });
   }
 
+  const sequelize = require('../config/db');
+  const FeeStatus = require('../models/FeeStatus');
+  const t = await sequelize.transaction();
+
   try {
     // First check if user exists and is active
     const user = await User.findOne({
-      where: { user_id, status: 'active' }
+      where: { user_id, status: 'active' },
+      transaction: t
     });
 
     if (!user) {
+      await t.rollback();
       return res.status(404).json({ message: `Active user with id ${user_id} not found` });
     }
 
-    const newStudent = await StudentBatch.create({ user_id, batch_id });
+    const newStudent = await StudentBatch.create(
+      { user_id, batch_id },
+      { transaction: t }
+    );
+
+    // Auto-create zero-initialized FeeStatus ledger for the student's batch
+    const today = new Date().toISOString().split('T')[0];
+    await FeeStatus.findOrCreate({
+      where: { user_id, batch_id },
+      defaults: {
+        admissionDate: today,
+        totalFees: "0",
+        feesSubmitted: "0",
+        remainingFees: "0",
+        nextDueDate: null,
+        user_id: user_id,
+        batch_id: batch_id,
+        paymentCompleted: false
+      },
+      transaction: t
+    });
+
+    await t.commit();
     res.status(201).json({ message: 'Student added successfully', student: newStudent });
   } catch (error) {
+    await t.rollback();
     console.error('Error adding student to batch:', error);
-    res.status(500).json({ message: 'Server error', error });
+    res.status(500).json({ message: 'Server error', error: error.message || error });
   }
 });
 
