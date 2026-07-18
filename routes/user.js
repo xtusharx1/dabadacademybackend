@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const User = require('../models/user');
 const sequelize = require('../config/db');
+const { Op } = require('sequelize');
 
 const router = express.Router();
 
@@ -614,6 +615,102 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Error during login:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
+// Get birthdays of active students
+router.get('/birthdays', async (req, res) => {
+  try {
+    const students = await User.findAll({
+      where: {
+        role_id: 2,
+        status: 'active',
+        date_of_birth: {
+          [Op.ne]: null
+        }
+      },
+      attributes: ['user_id', 'name', 'email', 'phone_number', 'date_of_birth', 'present_class', 'profile_picture']
+    });
+
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const currentYear = today.getFullYear();
+
+    const formattedStudents = students.map(student => {
+      const dob = new Date(student.date_of_birth);
+      if (isNaN(dob.getTime())) return null;
+
+      const dobMonth = dob.getMonth();
+      const dobDay = dob.getDate();
+      const dobYear = dob.getFullYear();
+
+      // Formatted DOB (e.g. 19-July-2012)
+      const formattedDob = `${dobDay.toString().padStart(2, '0')}-${months[dobMonth]}-${dobYear}`;
+
+      // Calculate next birthday date
+      let nextBday = new Date(currentYear, dobMonth, dobDay);
+      nextBday.setHours(0, 0, 0, 0);
+
+      const isLeap = (yr) => (yr % 4 === 0 && yr % 100 !== 0) || (yr % 400 === 0);
+
+      // Handle leap year edge case (Feb 29 on a non-leap year)
+      if (dobMonth === 1 && dobDay === 29) {
+        if (!isLeap(currentYear)) {
+          nextBday = new Date(currentYear, 1, 28);
+        }
+      }
+
+      // If birthday already passed this year, set for next year
+      if (nextBday < today) {
+        nextBday = new Date(currentYear + 1, dobMonth, dobDay);
+        if (dobMonth === 1 && dobDay === 29) {
+          if (!isLeap(currentYear + 1)) {
+            nextBday = new Date(currentYear + 1, 1, 28);
+          }
+        }
+      }
+
+      // Calculate age
+      let age = currentYear - dobYear;
+      const bdayThisYear = new Date(currentYear, dobMonth, dobDay);
+      if (today < bdayThisYear) {
+        age -= 1;
+      }
+
+      // Calculate days remaining
+      const diffMs = nextBday.getTime() - today.getTime();
+      const daysRemaining = Math.round(diffMs / (1000 * 60 * 60 * 24));
+      const formattedNextBday = `${nextBday.getDate().toString().padStart(2, '0')}-${months[nextBday.getMonth()]}-${nextBday.getFullYear()}`;
+
+      return {
+        user_id: student.user_id,
+        name: student.name,
+        email: student.email,
+        phone_number: student.phone_number,
+        present_class: student.present_class,
+        profile_picture: student.profile_picture,
+        date_of_birth: student.date_of_birth,
+        formattedDob,
+        nextBirthday: nextBday.toISOString().split('T')[0],
+        formattedNextBirthday: formattedNextBday,
+        age: age < 0 ? 0 : age,
+        daysRemaining: daysRemaining < 0 ? 0 : daysRemaining,
+        isToday: daysRemaining === 0
+      };
+    }).filter(Boolean);
+
+    // Sort by daysRemaining ascending (Today's birthdays first, then upcoming, then past birthdays next year)
+    formattedStudents.sort((a, b) => a.daysRemaining - b.daysRemaining);
+
+    res.status(200).json(formattedStudents);
+  } catch (error) {
+    console.error('Error fetching student birthdays:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
