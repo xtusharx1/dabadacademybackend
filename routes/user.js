@@ -619,7 +619,18 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Get birthdays of active students
+const StudentBatch = require('../models/studentbatch');
+const Batch = require('../models/batch');
+
+// Ensure associations between User, StudentBatch, and Batch
+if (!User.associations.studentBatches) {
+  User.hasMany(StudentBatch, { foreignKey: 'user_id', as: 'studentBatches' });
+}
+if (!StudentBatch.associations.batch) {
+  StudentBatch.belongsTo(Batch, { foreignKey: 'batch_id', as: 'batch' });
+}
+
+// Get birthdays of active students belonging to active batches
 router.get('/birthdays', async (req, res) => {
   try {
     const students = await User.findAll({
@@ -630,7 +641,19 @@ router.get('/birthdays', async (req, res) => {
           [Op.ne]: null
         }
       },
-      attributes: ['user_id', 'name', 'email', 'phone_number', 'date_of_birth', 'present_class', 'profile_picture']
+      attributes: ['user_id', 'name', 'email', 'phone_number', 'date_of_birth', 'present_class', 'profile_picture'],
+      include: [{
+        model: StudentBatch,
+        as: 'studentBatches',
+        required: true,
+        include: [{
+          model: Batch,
+          as: 'batch',
+          required: true,
+          where: { is_active: true },
+          attributes: ['batch_id', 'batch_name', 'is_active']
+        }]
+      }]
     });
 
     const months = [
@@ -642,9 +665,25 @@ router.get('/birthdays', async (req, res) => {
     today.setHours(0, 0, 0, 0);
     const currentYear = today.getFullYear();
 
-    const formattedStudents = students.map(student => {
+    const studentMap = new Map();
+
+    for (const student of students) {
+      if (studentMap.has(student.user_id)) {
+        const existing = studentMap.get(student.user_id);
+        const activeBatches = (student.studentBatches || [])
+          .map(sb => sb.batch)
+          .filter(b => b && b.is_active);
+        for (const b of activeBatches) {
+          if (!existing.batches.some(eb => eb.batch_id === b.batch_id)) {
+            existing.batches.push({ batch_id: b.batch_id, batch_name: b.batch_name });
+          }
+        }
+        existing.batch_names = existing.batches.map(b => b.batch_name).join(', ');
+        continue;
+      }
+
       const dob = new Date(student.date_of_birth);
-      if (isNaN(dob.getTime())) return null;
+      if (isNaN(dob.getTime())) continue;
 
       const dobMonth = dob.getMonth();
       const dobDay = dob.getDate();
@@ -688,7 +727,15 @@ router.get('/birthdays', async (req, res) => {
       const daysRemaining = Math.round(diffMs / (1000 * 60 * 60 * 24));
       const formattedNextBday = `${nextBday.getDate().toString().padStart(2, '0')}-${months[nextBday.getMonth()]}-${nextBday.getFullYear()}`;
 
-      return {
+      // Collect active batch details for this student
+      const activeBatches = (student.studentBatches || [])
+        .map(sb => sb.batch)
+        .filter(b => b && b.is_active);
+
+      const batchList = activeBatches.map(b => ({ batch_id: b.batch_id, batch_name: b.batch_name }));
+      const batchNames = activeBatches.map(b => b.batch_name).join(', ');
+
+      studentMap.set(student.user_id, {
         user_id: student.user_id,
         name: student.name,
         email: student.email,
@@ -701,9 +748,13 @@ router.get('/birthdays', async (req, res) => {
         formattedNextBirthday: formattedNextBday,
         age: age < 0 ? 0 : age,
         daysRemaining: daysRemaining < 0 ? 0 : daysRemaining,
-        isToday: daysRemaining === 0
-      };
-    }).filter(Boolean);
+        isToday: daysRemaining === 0,
+        batches: batchList,
+        batch_names: batchNames || student.present_class || 'N/A'
+      });
+    }
+
+    const formattedStudents = Array.from(studentMap.values());
 
     // Sort by daysRemaining ascending (Today's birthdays first, then upcoming, then past birthdays next year)
     formattedStudents.sort((a, b) => a.daysRemaining - b.daysRemaining);
