@@ -619,6 +619,47 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Test/demo sign-in (e.g. for App Store review). Change TEST_SIGNIN_USER_ID here
+// to switch which account the demo login opens - no app release needed.
+const TEST_SIGNIN_EMAIL = 'dabad';
+const TEST_SIGNIN_PASSWORD = 'dabad';
+const TEST_SIGNIN_USER_ID = 146;
+
+router.post('/testsignin', async (req, res) => {
+  let { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Please provide both email and password' });
+  }
+
+  if (email.trim().toLowerCase() !== TEST_SIGNIN_EMAIL || password.trim() !== TEST_SIGNIN_PASSWORD) {
+    return res.status(401).json({ message: 'Invalid credentials' });
+  }
+
+  try {
+    const user = await User.findByPk(TEST_SIGNIN_USER_ID);
+
+    if (!user) {
+      return res.status(404).json({ message: 'Test user not found' });
+    }
+
+    res.status(200).json({
+      message: 'Login successful',
+      user: {
+        id: user.user_id,
+        name: user.name,
+        email: user.email,
+        phone_number: user.phone_number,
+        role_id: user.role_id,
+        status: user.status,
+      },
+    });
+  } catch (error) {
+    console.error('Error during test sign-in:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
 const StudentBatch = require('../models/studentbatch');
 const Batch = require('../models/batch');
 
