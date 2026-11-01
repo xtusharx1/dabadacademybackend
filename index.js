@@ -1,3 +1,9 @@
+// Polyfill buffer.SlowBuffer for Node.js 25+ compatibility with legacy packages (jwa, buffer-equal-constant-time)
+const buffer = require('buffer');
+if (!buffer.SlowBuffer) {
+  buffer.SlowBuffer = buffer.Buffer;
+}
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
@@ -28,6 +34,7 @@ const teacherBatch = require("./routes/TeacherbatchRoutes");
 const studentCounselorRoutes = require('./routes/studentCounselor');
 const studentTypeRoutes = require('./routes/StudentType');
 const deviceTokenRoutes = require('./routes/DeviceToken'); // Add the new device token routes
+const feeAnalyticsRoutes = require('./routes/FeeAnalyticsRoutes'); // Read-only fee dashboard/collections
 
 dotenv.config();
 
@@ -63,6 +70,7 @@ app.use('/api/subject-teachers', subjectTeacherRoutes)
 app.use('/api/teacher-batches', teacherBatch);
 app.use('/api/student-counselor', studentCounselorRoutes);
 app.use('/api/student-types', studentTypeRoutes);
+app.use('/api/fee-analytics', feeAnalyticsRoutes);
 
 // FCM device token routes
 app.use('/api', deviceTokenRoutes); 
