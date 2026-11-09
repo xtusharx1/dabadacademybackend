@@ -807,4 +807,94 @@ router.get('/birthdays', async (req, res) => {
   }
 });
 
+// Permanently delete a student and ALL related data. Admin only.
+// Body: { admin_id, admin_password } - the admin re-enters their own password,
+// which the server verifies, so the delete can't be triggered without admin credentials.
+router.delete('/user/:user_id', async (req, res) => {
+  const userId = parseInt(req.params.user_id, 10);
+  const { admin_id, admin_password } = req.body || {};
+
+  if (!userId) return res.status(400).json({ message: 'Invalid user id' });
+  if (!admin_id || !admin_password) {
+    return res.status(401).json({ message: 'Admin credentials are required' });
+  }
+
+  try {
+    // 1. Verify the caller is an active admin with the right password
+    const admin = await User.findByPk(admin_id);
+    if (!admin || admin.role_id !== 1 || admin.status !== 'active') {
+      return res.status(403).json({ message: 'Only admins can delete student profiles' });
+    }
+    const hash = admin.password_hash || '';
+    const passwordOk = /^\$2[aby]\$/.test(hash)
+      ? await bcrypt.compare(admin_password, hash)
+      : hash === admin_password; // legacy plain-text passwords
+    if (!passwordOk) {
+      return res.status(401).json({ message: 'Incorrect admin password' });
+    }
+
+    // 2. Only student accounts can be deleted here
+    const student = await User.findByPk(userId);
+    if (!student) return res.status(404).json({ message: 'Student not found' });
+    if (student.role_id !== 2) {
+      return res.status(400).json({ message: 'Only student profiles can be deleted' });
+    }
+
+    const Attendance = require('../models/attendance');
+    const StudentBatch = require('../models/studentbatch');
+    const StudentTestRecords = require('../models/StudentTestRecords');
+    const StudentDocuments = require('../models/studentDocument');
+    const StudentType = require('../models/StudentType');
+    const StudentCounselor = require('../models/studentCounselor');
+    const DeviceToken = require('../models/DeviceToken');
+    const FeeStatus = require('../models/FeeStatus');
+    const FeePaymentRecord = require('../models/FeePaymentRecord');
+    const OtherChargesRecord = require('../models/OtherChargesRecord');
+
+    // 3. Delete everything in one transaction - all or nothing
+    const counts = await sequelize.transaction(async (transaction) => {
+      const opts = { transaction };
+      const feeStatuses = await FeeStatus.findAll({ where: { user_id: userId }, attributes: ['id'], ...opts });
+      const feeStatusIds = feeStatuses.map((f) => f.id);
+
+      const c = {};
+      c.fee_payments = feeStatusIds.length
+        ? await FeePaymentRecord.destroy({ where: { feeStatusId: feeStatusIds }, ...opts }) : 0;
+      c.other_charges = feeStatusIds.length
+        ? await OtherChargesRecord.destroy({ where: { feeStatusId: feeStatusIds }, ...opts }) : 0;
+      c.fee_status = await FeeStatus.destroy({ where: { user_id: userId }, ...opts });
+      c.attendance = await Attendance.destroy({ where: { user_id: userId }, ...opts });
+      c.test_records = await StudentTestRecords.destroy({ where: { user_id: userId }, ...opts });
+      c.documents = await StudentDocuments.destroy({ where: { user_id: userId }, ...opts });
+      c.batches = await StudentBatch.destroy({ where: { user_id: userId }, ...opts });
+      c.student_type = await StudentType.destroy({ where: { student_id: userId }, ...opts });
+      c.counselor_links = await StudentCounselor.destroy({ where: { s_id: userId }, ...opts });
+      c.device_tokens = await DeviceToken.destroy({ where: { user_id: userId }, ...opts });
+      c.user = await User.destroy({ where: { user_id: userId }, ...opts });
+      return c;
+    });
+
+    // 4. Remove uploaded document files from S3 (after the DB commit)
+    let filesDeleted = 0;
+    let filesError = null;
+    try {
+      const { deleteFolder } = require('../services/s3Service');
+      filesDeleted = await deleteFolder(`student_documents/${userId}/`);
+    } catch (err) {
+      console.error(`S3 cleanup failed for user ${userId}:`, err);
+      filesError = 'Profile deleted, but some uploaded files could not be removed from storage.';
+    }
+
+    console.log(`Admin ${admin_id} deleted student ${userId} (${student.name})`, counts, { filesDeleted });
+    res.status(200).json({
+      message: `${student.name}'s profile was permanently deleted`,
+      deleted: { ...counts, files: filesDeleted },
+      warning: filesError,
+    });
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    res.status(500).json({ message: 'Could not delete student. Nothing was removed.', error: error.message });
+  }
+});
+
 module.exports = router;
