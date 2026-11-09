@@ -17,8 +17,9 @@ async function loadData(batchId, withPayments) {
             f."nextDueDate", f."paymentCompleted", b.batch_name, u.name, u.phone_number
        FROM "FeeStatus" f
        JOIN "Batches" b ON b.batch_id = f.batch_id
-       LEFT JOIN "Users" u ON u.user_id = f.user_id
-      WHERE ${scope.where}`,
+       JOIN "Users" u ON u.user_id = f.user_id
+      WHERE ${scope.where}
+        AND u.status = 'active'`, // inactive students are left out of every figure
     { replacements: scope.replacements, type: sequelize.QueryTypes.SELECT },
   );
   if (!withPayments) return { statuses };

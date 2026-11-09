@@ -3,6 +3,16 @@ const FeeStatus = require('../models/FeeStatus');
 const { Op, Sequelize } = require('sequelize');
 const router = express.Router();
 
+// A student has only one live due date: when a new one is set on one fee record,
+// clear the due date on that student's other fee records (e.g. from a previous class).
+async function clearOtherDueDates(feeStatus) {
+  if (!feeStatus || !feeStatus.nextDueDate) return;
+  await FeeStatus.update(
+    { nextDueDate: null },
+    { where: { user_id: feeStatus.user_id, id: { [Op.ne]: feeStatus.id }, nextDueDate: { [Op.ne]: null } } },
+  );
+}
+
 // Get all fee statuses
 router.get('/', async (req, res) => {
   try {
@@ -165,6 +175,7 @@ router.post('/', async (req, res) => {
       ...req.body,
       paymentCompleted: req.body.paymentCompleted || false,
     });
+    await clearOtherDueDates(feeStatus);
     res.status(201).json(feeStatus);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -175,6 +186,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { paymentCompleted, nextDueDate, feesSubmitted, remainingFees } = req.body;
+    const before = await FeeStatus.findByPk(req.params.id, { attributes: ['nextDueDate'] });
 
     const updatedData = {
       ...req.body,
@@ -188,6 +200,9 @@ router.put('/:id', async (req, res) => {
     if (!updated) return res.status(404).json({ error: 'Fee status not found' });
 
     const updatedFeeStatus = await FeeStatus.findByPk(req.params.id);
+    if (updatedFeeStatus.nextDueDate && updatedFeeStatus.nextDueDate !== (before && before.nextDueDate)) {
+      await clearOtherDueDates(updatedFeeStatus);
+    }
     res.json(updatedFeeStatus);
   } catch (err) {
     res.status(500).json({ error: err.message });

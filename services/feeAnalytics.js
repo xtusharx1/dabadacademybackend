@@ -80,6 +80,21 @@ function dashboard({ statuses, payments, charges }, today) {
     const g = byTitle[name] || (byTitle[name] = { name, amount: 0, payments: 0 });
     g.amount += amt; g.payments += 1;
   });
+  // Financial-year view (April to March) of actual money received
+  const fyStart = Number(month.slice(5, 7)) >= 4 ? Number(month.slice(0, 4)) : Number(month.slice(0, 4)) - 1;
+  const sessionMonths = [];
+  for (let i = 0; i < 12; i += 1) {
+    const mm = ((3 + i) % 12) + 1;
+    const yy = mm >= 4 ? fyStart : fyStart + 1;
+    sessionMonths.push({ month: `${yy}-${String(mm).padStart(2, '0')}`, amount: 0, payments: 0 });
+  }
+  const sessionIndex = Object.fromEntries(sessionMonths.map((m) => [m.month, m]));
+  payments.forEach((p) => {
+    if (!isDate(p.date)) return;
+    const m = sessionIndex[p.date.slice(0, 7)];
+    if (m) { m.amount += toNum(p.amount); m.payments += 1; }
+  });
+
   // Drop empty months before the first payment so the chart starts where data starts
   const monthly = Object.values(byMonth);
   while (monthly.length > 1 && monthly[0].payments === 0) monthly.shift();
@@ -118,6 +133,11 @@ function dashboard({ statuses, payments, charges }, today) {
       collected_last_month: round(collectedLastMonth),
     },
     monthly: monthly.map((m) => ({ ...m, amount: round(m.amount) })),
+    session: {
+      label: `${fyStart}-${String((fyStart + 1) % 100).padStart(2, '0')}`,
+      months: sessionMonths.map((m) => ({ ...m, amount: round(m.amount), future: m.month > month })),
+      total: round(sessionMonths.reduce((sum, m) => sum + m.amount, 0)),
+    },
     installments,
     charges: Object.values(chargeGroups).sort((a, b) => b.amount - a.amount).map((g) => ({ ...g, amount: round(g.amount) })),
     batches: Object.values(batches)
@@ -137,12 +157,16 @@ function collections({ statuses }, today) {
     .filter((x) => x.status !== 'paid');
 
   const tiles = { overdue: { amount: 0, students: 0 }, week: { amount: 0, students: 0 }, later: { amount: 0, students: 0 }, nodate: { amount: 0, students: 0 } };
+  const batches = {};
   const ageing = AGEING.map(([label, from, to]) => ({ label, from, to, amount: 0, students: 0 }));
   const byDate = {};
 
   const students = owing.map(({ s, status }) => {
     const rem = toNum(s.remainingFees);
     tiles[status].amount += rem; tiles[status].students += 1;
+    const b = batches[s.batch_id] || (batches[s.batch_id] = { batch_id: s.batch_id, batch_name: s.batch_name, outstanding: 0, overdue: 0, students: 0 });
+    b.outstanding += rem; b.students += 1;
+    if (status === 'overdue') b.overdue += rem;
     const days = isDate(s.nextDueDate) ? daysBetween(s.nextDueDate, today) : null; // positive = overdue
     if (status === 'overdue') {
       const a = ageing.find((g) => days >= g.from && days <= g.to);
@@ -172,6 +196,9 @@ function collections({ statuses }, today) {
     students_owing: students.length,
     tiles,
     ageing: ageing.map(({ label, amount, students: n }) => ({ label, amount: round(amount), students: n })),
+    batches: Object.values(batches)
+      .map((b) => ({ ...b, outstanding: round(b.outstanding), overdue: round(b.overdue) }))
+      .sort((a, b) => String(a.batch_name).localeCompare(String(b.batch_name))),
     by_due_date: Object.values(byDate).sort((a, b) => (a.date < b.date ? -1 : 1)).map((d) => ({ ...d, amount: round(d.amount) })),
     students,
   };
